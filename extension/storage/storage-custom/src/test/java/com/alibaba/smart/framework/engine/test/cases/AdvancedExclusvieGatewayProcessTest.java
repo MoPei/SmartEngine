@@ -17,21 +17,24 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class AllServiceTaskJumpFromTest extends CustomBaseTestCase {
+public class AdvancedExclusvieGatewayProcessTest extends CommonTestCode {
+
+    @Override
+    public void setUp() {
+        super.setUp();
+
+        BasicServiceTaskDelegation.resetCounter();
+        ExclusiveTaskDelegation.resetCounter();
+    }
 
     @Test
     public void test() throws Exception {
 
-        ProcessDefinition processDefinition = repositoryCommandService
-            .deploy("all-simple-servicetask.bpmn.xml").getFirstProcessDefinition();
-        assertEquals(9, processDefinition.getBaseElementList().size());
-
-        ProcessInstance processInstance =  executionCommandService.jumpTo("1",processDefinition.getId(),processDefinition.getVersion(),InstanceStatus.running,"serviceTask1");
+        ExecutionInstance executionInstance = common_a("advanced-exclusviegateway-process.bpmn.xml");
 
 
-        processInstance =   executionCommandService.jumpFrom(processInstance,"serviceTask1",null,null);
+        commonCode(null, executionInstance);
 
-        Assert.assertEquals(InstanceStatus.completed,processInstance.getStatus());
     }
 
 }
