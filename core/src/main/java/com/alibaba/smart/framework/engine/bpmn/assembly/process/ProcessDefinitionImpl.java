@@ -23,13 +23,13 @@ public class ProcessDefinitionImpl implements ProcessDefinition {
 
     private static final long serialVersionUID = -7973338663278156625L;
 
-    public final static QName type = new QName(BpmnNameSpaceConstant.NAME_SPACE, "process");
+    public final static QName qtype = new QName(BpmnNameSpaceConstant.NAME_SPACE, "process");
 
     private String id;
 
     private String version;
 
-    private String idAndVersion;
+    //private String idAndVersion;
 
 
     private String name;

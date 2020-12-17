@@ -7,7 +7,7 @@ import java.util.Map;
  * @author 高海军 帝奇  2016.11.11
  * @author ettear 2016.04.13
  */
-public interface ProcessDefinition extends ExtensionBasedElement {
+public interface ProcessDefinition extends ExtensionElementContainer,IdBasedElement {
 
     String getName();
     void setName(String name);
@@ -16,9 +16,9 @@ public interface ProcessDefinition extends ExtensionBasedElement {
     String getVersion();
     void setVersion(String version);
 
-    String getIdAndVersion();
-
-    void setIdAndVersion(String idAndVersion);
+    //String getIdAndVersion();
+    //
+    //void setIdAndVersion(String idAndVersion);
     
 
     List<BaseElement> getBaseElementList();
@@ -29,5 +29,5 @@ public interface ProcessDefinition extends ExtensionBasedElement {
 
     void setIdBasedElementMap( Map<String, IdBasedElement> idBasedElementMap);
 
-
+    void  setProperties(Map<String,String> properties);
 }

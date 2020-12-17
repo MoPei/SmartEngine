@@ -6,11 +6,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.alibaba.smart.framework.engine.behavior.ActivityBehavior;
+import com.alibaba.smart.framework.engine.bpmn.behavior.gateway.ExclusiveGatewayBehaviorHelper;
 import com.alibaba.smart.framework.engine.common.util.MapUtil;
 import com.alibaba.smart.framework.engine.common.util.MarkDoneUtil;
 import com.alibaba.smart.framework.engine.configuration.ProcessEngineConfiguration;
 import com.alibaba.smart.framework.engine.context.ExecutionContext;
-import com.alibaba.smart.framework.engine.exception.EngineException;
 import com.alibaba.smart.framework.engine.instance.factory.ActivityInstanceFactory;
 import com.alibaba.smart.framework.engine.instance.factory.ExecutionInstanceFactory;
 import com.alibaba.smart.framework.engine.instance.factory.ProcessInstanceFactory;
@@ -19,7 +19,6 @@ import com.alibaba.smart.framework.engine.instance.storage.ExecutionInstanceStor
 import com.alibaba.smart.framework.engine.model.assembly.Activity;
 import com.alibaba.smart.framework.engine.model.instance.ActivityInstance;
 import com.alibaba.smart.framework.engine.model.instance.ExecutionInstance;
-import com.alibaba.smart.framework.engine.model.instance.InstanceStatus;
 import com.alibaba.smart.framework.engine.model.instance.ProcessInstance;
 import com.alibaba.smart.framework.engine.pvm.PvmActivity;
 import com.alibaba.smart.framework.engine.pvm.PvmTransition;
@@ -56,28 +55,31 @@ public abstract class AbstractActivityBehavior<T extends Activity> implements Ac
     @Override
     public boolean enter(ExecutionContext context, PvmActivity pvmActivity) {
 
-        ActivityInstance activityInstance = createSingleActivityInstance(context, pvmActivity.getModel());
+        ProcessInstance processInstance = context.getProcessInstance();
 
-        ExecutionInstance executionInstance = this.executionInstanceFactory.create(activityInstance, context);
-        List<ExecutionInstance> executionInstanceList = new ArrayList<ExecutionInstance>(1);
-        executionInstanceList.add(executionInstance);
+        synchronized (processInstance){
 
-        activityInstance.setExecutionInstanceList(executionInstanceList);
-        context.setExecutionInstance(executionInstance);
+            ActivityInstance activityInstance = createSingleActivityInstanceAndAttachToProcessInstance(context, pvmActivity.getModel());
 
-        if (context.isNeedPause()) {
-            executionInstance.setStatus(InstanceStatus.suspended);
+            ExecutionInstance executionInstance = this.executionInstanceFactory.create(activityInstance, context);
+            List<ExecutionInstance> executionInstanceList = new ArrayList<ExecutionInstance>(1);
+            executionInstanceList.add(executionInstance);
+
+            activityInstance.setExecutionInstanceList(executionInstanceList);
+            context.setExecutionInstance(executionInstance);
+
+            return false;
         }
 
-        return false;
     }
 
-    protected ActivityInstance createSingleActivityInstance(ExecutionContext context, Activity activity) {
+    protected ActivityInstance createSingleActivityInstanceAndAttachToProcessInstance(ExecutionContext context, Activity activity) {
         ProcessInstance processInstance = context.getProcessInstance();
 
         ActivityInstance activityInstance = this.activityInstanceFactory.create(activity, context);
         processInstance.addActivityInstance(activityInstance);
         context.setActivityInstance(activityInstance);
+
         return activityInstance;
     }
 
@@ -95,9 +97,6 @@ public abstract class AbstractActivityBehavior<T extends Activity> implements Ac
             ExecutionInstance executionInstance = context.getExecutionInstance();
             MarkDoneUtil.markDoneExecutionInstance(executionInstance,executionInstanceStorage,
                 processEngineConfiguration);
-        }else{
-            ExecutionInstance executionInstance = context.getExecutionInstance();
-            executionInstance.setStatus(InstanceStatus.suspended);
         }
     }
 
@@ -110,12 +109,10 @@ public abstract class AbstractActivityBehavior<T extends Activity> implements Ac
 
     @Override
     public void leave(ExecutionContext context, PvmActivity pvmActivity) {
-
         //执行每个节点的hook方法
         Map<String, PvmTransition> outcomeTransitions = pvmActivity.getOutcomeTransitions();
 
         if(MapUtil.isEmpty(outcomeTransitions)){
-
             LOGGER.info("No outcomeTransitions found for activity id: "+pvmActivity.getModel().getId()+", it's just fine, it should be the last activity of the process");
 
             return;
@@ -128,12 +125,13 @@ public abstract class AbstractActivityBehavior<T extends Activity> implements Ac
                 }
             }else {
 
-                throw new EngineException("The outcomeTransitions.size() should only be 1 for the activity id :"+pvmActivity.getModel().getId());
+                 ExclusiveGatewayBehaviorHelper.chooseOnlyOne(context, outcomeTransitions);
+
             }
         }
 
-
     }
+
 
 
 }

@@ -19,16 +19,9 @@ import com.alibaba.smart.framework.engine.xml.util.XmlParseUtil;
 
 public class DiagramParser extends AbstractElementParser<Diagram>   {
 
-    public final static QName type = new QName(BpmnNameSpaceConstant.BPMNDI_NAME_SPACE, "BPMNDiagram");
+    public final static QName qtype = new QName(BpmnNameSpaceConstant.BPMNDI_NAME_SPACE, "BPMNDiagram");
 
     private static final long serialVersionUID = -2660788294142169268L;
-
-
-
-    @Override
-    public QName getQname() {
-        return Diagram.type;
-    }
 
     @Override
     public Class<Diagram> getModelType() {

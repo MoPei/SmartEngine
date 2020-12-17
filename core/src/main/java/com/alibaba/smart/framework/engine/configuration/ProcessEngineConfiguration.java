@@ -1,9 +1,11 @@
 package com.alibaba.smart.framework.engine.configuration;
 
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import com.alibaba.smart.framework.engine.SmartEngine;
 import com.alibaba.smart.framework.engine.annoation.Experiment;
+import com.alibaba.smart.framework.engine.common.expression.evaluator.ExpressionEvaluator;
 import com.alibaba.smart.framework.engine.configuration.scanner.AnnotationScanner;
 
 /**
@@ -39,11 +41,32 @@ public interface ProcessEngineConfiguration {
 
     InstanceAccessor getInstanceAccessor();
 
+    /**
+     * 默认不需要扩展。默认使用MVEL表达式引擎。
+     *
+     * @param expressionEvaluator
+     *
+     */
+    void setExpressionEvaluator(ExpressionEvaluator expressionEvaluator);
 
+    ExpressionEvaluator getExpressionEvaluator();
+
+    /**
+     * 默认不需要扩展。
+     */
     void setDelegationExecutor(DelegationExecutor delegationExecutor);
 
     DelegationExecutor getDelegationExecutor();
+    /**
+     * 默认不需要扩展。
+     */
+    void setListenerExecutor(ListenerExecutor listenerExecutor);
 
+    ListenerExecutor getListenerExecutor();
+
+    /**
+     * 默认不需要扩展。但是生产环境也可以使用Spring的AnnotationScanner实现。
+     */
     void setAnnotationScanner(AnnotationScanner annotationScanner);
 
 
@@ -59,6 +82,15 @@ public interface ProcessEngineConfiguration {
     void setExceptionProcessor(ExceptionProcessor exceptionProcessor);
 
     ExceptionProcessor getExceptionProcessor();
+
+
+    /**
+     * 一般不需要扩展。
+     * 但当你需要针对Delegation执行时抛出的异常，超时等做出精细化处理时，才需要扩展此类。
+     */
+    void setParallelServiceOrchestration(ParallelServiceOrchestration parallelServiceOrchestration);
+
+    ParallelServiceOrchestration getParallelServiceOrchestration();
 
     /**
      * 主要用于外部扩展。
@@ -109,9 +141,26 @@ public interface ProcessEngineConfiguration {
 
     ExecutorService getExecutorService();
 
+    /**
+     * 设置自定义的线程池map，支持并行网关的fork时，指定自定义的线程池
+     * @param poolsMap
+     */
+    void setExecutorServiceMap(Map<String, ExecutorService> poolsMap);
+
+    Map<String, ExecutorService> getExecutorServiceMap();
+
     void setOptionContainer(OptionContainer optionContainer);
 
     OptionContainer getOptionContainer();
+
+    /**
+     * 目前使用场景较少，主要用于兼容老版本的xml namespace 场景。
+     * 一般使用场景下，直接忽略该配置即可
+     * @param extension
+     */
+    void setMagicExtension(Map<String,Object> extension);
+
+    Map<String,Object> getMagicExtension();
 
     // 是否要干掉 用于配置扩展,默认可以为空。设计目的是根据自己的业务需求,来自定义存储(该机制会绕过引擎自带的各种Storage机制,powerful and a little UnSafe)。。
     //void setPersisterStrategy(PersisterStrategy persisterStrategy);

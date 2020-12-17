@@ -13,9 +13,8 @@ import com.alibaba.smart.framework.engine.configuration.scanner.AnnotationScanne
 import com.alibaba.smart.framework.engine.constant.RequestMapSpecialKeyConstant;
 import com.alibaba.smart.framework.engine.constant.TaskInstanceConstant;
 import com.alibaba.smart.framework.engine.context.ExecutionContext;
-import com.alibaba.smart.framework.engine.context.factory.InstanceContextFactory;
+import com.alibaba.smart.framework.engine.context.factory.ContextFactory;
 import com.alibaba.smart.framework.engine.deployment.ProcessDefinitionContainer;
-import com.alibaba.smart.framework.engine.exception.EngineException;
 import com.alibaba.smart.framework.engine.extension.annoation.ExtensionBinding;
 import com.alibaba.smart.framework.engine.extension.constant.ExtensionConstant;
 import com.alibaba.smart.framework.engine.hook.LifeCycleHook;
@@ -23,7 +22,6 @@ import com.alibaba.smart.framework.engine.instance.factory.ProcessInstanceFactor
 import com.alibaba.smart.framework.engine.instance.storage.ExecutionInstanceStorage;
 import com.alibaba.smart.framework.engine.instance.storage.ProcessInstanceStorage;
 import com.alibaba.smart.framework.engine.instance.storage.TaskInstanceStorage;
-import com.alibaba.smart.framework.engine.model.assembly.ProcessDefinition;
 import com.alibaba.smart.framework.engine.model.instance.DeploymentInstance;
 import com.alibaba.smart.framework.engine.model.instance.ExecutionInstance;
 import com.alibaba.smart.framework.engine.model.instance.InstanceStatus;
@@ -34,6 +32,7 @@ import com.alibaba.smart.framework.engine.pvm.impl.DefaultPvmProcessInstance;
 import com.alibaba.smart.framework.engine.service.command.ProcessCommandService;
 import com.alibaba.smart.framework.engine.service.param.query.TaskInstanceQueryParam;
 import com.alibaba.smart.framework.engine.service.query.DeploymentQueryService;
+import com.alibaba.smart.framework.engine.util.ObjUtil;
 
 /**
  * @author 高海军 帝奇  2016.11.11
@@ -47,7 +46,7 @@ public class DefaultProcessCommandService implements ProcessCommandService, Life
 
     private ProcessDefinitionContainer processDefinitionContainer;
 
-    private InstanceContextFactory instanceContextFactory;
+    private ContextFactory instanceContextFactory;
     private ProcessInstanceFactory processInstanceFactory;
 
 
@@ -58,7 +57,7 @@ public class DefaultProcessCommandService implements ProcessCommandService, Life
 
         this.processDefinitionContainer = annotationScanner.getExtensionPoint(ExtensionConstant.SERVICE,ProcessDefinitionContainer.class);
 
-        this.instanceContextFactory = annotationScanner.getExtensionPoint(ExtensionConstant.COMMON,InstanceContextFactory.class);
+        this.instanceContextFactory = annotationScanner.getExtensionPoint(ExtensionConstant.COMMON, ContextFactory.class);
         this.processInstanceFactory =annotationScanner.getExtensionPoint(ExtensionConstant.COMMON,ProcessInstanceFactory.class);
         this.processInstanceStorage = annotationScanner.getExtensionPoint(ExtensionConstant.COMMON,ProcessInstanceStorage.class);
 
@@ -80,30 +79,18 @@ public class DefaultProcessCommandService implements ProcessCommandService, Life
     @Override
     public ProcessInstance start(String processDefinitionId, String processDefinitionVersion, Map<String, Object> request, Map<String, Object> response) {
 
-        ExecutionContext executionContext = this.instanceContextFactory.create();
-        executionContext.setProcessEngineConfiguration(processEngineConfiguration);
-        executionContext.setRequest(request);
-        executionContext.setResponse(response);
 
+        ProcessInstance processInstance = processInstanceFactory.create(  processEngineConfiguration,    processDefinitionId,processDefinitionVersion,   request);
 
-        ProcessDefinition processDefinition = this.processDefinitionContainer.getProcessDefinition(processDefinitionId,
-            processDefinitionVersion);
-
-        if(null == processDefinition){
-            throw new EngineException("No ProcessDefinition found for processDefinitionId : "+processDefinitionId+",processDefinitionVersion : " +processDefinitionVersion);
-        }
-
-        executionContext.setProcessDefinition(processDefinition);
+        ExecutionContext executionContext = this.instanceContextFactory.create(processEngineConfiguration, processInstance,
+            request, response, null);
 
         // TUNE 减少不必要的对象创建
         PvmProcessInstance pvmProcessInstance = new DefaultPvmProcessInstance();
 
-        ProcessInstance processInstance = processInstanceFactory.create(executionContext);
         try {
             //!!! 重要
-            tryInsertProcessInstanceAndLock(processEngineConfiguration, processInstance);
-
-            executionContext.setProcessInstance(processInstance);
+            CommonServiceHelper.tryInsertProcessInstanceIfNeedLock(processEngineConfiguration, processInstance);
 
             processInstance = pvmProcessInstance.start(executionContext);
 
@@ -115,19 +102,6 @@ public class DefaultProcessCommandService implements ProcessCommandService, Life
             if (null != lockStrategy) {
                 lockStrategy.unLock(processInstance.getInstanceId());
             }
-        }
-    }
-
-    private void tryInsertProcessInstanceAndLock(ProcessEngineConfiguration processEngineConfiguration,
-                                                 ProcessInstance processInstance) {
-        LockStrategy lockStrategy = processEngineConfiguration.getLockStrategy();
-        if(null != lockStrategy){
-
-
-
-            ProcessInstance newProcessInstance =  processInstanceStorage.insert(processInstance, processEngineConfiguration);
-
-            lockStrategy.tryLock(newProcessInstance.getInstanceId());
         }
     }
 
@@ -191,7 +165,7 @@ public class DefaultProcessCommandService implements ProcessCommandService, Life
         processInstance.setStatus(InstanceStatus.aborted);
         String  reason = null;
         if (null != request){
-            reason =   String.valueOf(request.get(RequestMapSpecialKeyConstant.PROCESS_INSTANCE_ABORT_REASON)) ;
+            reason =   ObjUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.PROCESS_INSTANCE_ABORT_REASON)) ;
         }
 
         processInstance.setReason(reason);

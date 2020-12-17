@@ -20,12 +20,6 @@ public class LoopCardinalityParser extends AbstractElementParser<LoopCardinality
       {
 
 
-
-    @Override
-    public QName getQname() {
-        return LoopCardinality.type;
-    }
-
     @Override
     public Class<LoopCardinality> getModelType() {
         return LoopCardinality.class;

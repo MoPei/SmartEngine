@@ -9,13 +9,14 @@ import javax.xml.stream.XMLStreamReader;
 
 import com.alibaba.smart.framework.engine.bpmn.assembly.process.ProcessDefinitionImpl;
 import com.alibaba.smart.framework.engine.common.util.CollectionUtil;
-import com.alibaba.smart.framework.engine.common.util.IdAndVersionBuilder;
 import com.alibaba.smart.framework.engine.common.util.MapUtil;
+import com.alibaba.smart.framework.engine.common.util.StringUtil;
 import com.alibaba.smart.framework.engine.configuration.aware.ProcessEngineConfigurationAware;
 import com.alibaba.smart.framework.engine.exception.EngineException;
 import com.alibaba.smart.framework.engine.extension.annoation.ExtensionBinding;
 import com.alibaba.smart.framework.engine.extension.constant.ExtensionConstant;
 import com.alibaba.smart.framework.engine.model.assembly.BaseElement;
+import com.alibaba.smart.framework.engine.model.assembly.ExtensionElements;
 import com.alibaba.smart.framework.engine.model.assembly.IdBasedElement;
 import com.alibaba.smart.framework.engine.model.assembly.ProcessDefinition;
 import com.alibaba.smart.framework.engine.xml.parser.AbstractElementParser;
@@ -27,13 +28,6 @@ import com.alibaba.smart.framework.engine.xml.util.XmlParseUtil;
 public class ProcessDefinitionParser extends AbstractElementParser<ProcessDefinition> implements
     ProcessEngineConfigurationAware {
 
-
-
-    @Override
-    public QName getQname() {
-        return ProcessDefinitionImpl.type;
-    }
-
     @Override
     public Class<ProcessDefinition> getModelType() {
         return ProcessDefinition.class;
@@ -44,9 +38,23 @@ public class ProcessDefinitionParser extends AbstractElementParser<ProcessDefini
 
         ProcessDefinition processDefinition = new ProcessDefinitionImpl();
         processDefinition.setId(XmlParseUtil.getString(reader, "id"));
-        processDefinition.setVersion(XmlParseUtil.getString(reader, "version"));
+
+        String version = XmlParseUtil.getString(reader, "version");
+
+        String versionTag = XmlParseUtil.getString(reader, "versionTag");
+
+        //优先使用versionTag；versionTag是 camunda等设计器的特性，此处是为了兼容。
+        if(StringUtil.isNotEmpty(versionTag)){
+            processDefinition.setVersion(versionTag);
+        }else {
+            processDefinition.setVersion(version);
+        }
+
         processDefinition.setName(XmlParseUtil.getString(reader, "name"));
-        processDefinition.setIdAndVersion(IdAndVersionBuilder.buildProcessDefinitionKey(processDefinition.getId(),processDefinition.getVersion()));
+
+
+        Map<String, String> properties = XmlParseUtil.parseExtendedProperties(reader, context);
+        processDefinition.setProperties(properties);
 
 
         List<BaseElement> elements = CollectionUtil.newArrayList();
@@ -56,6 +64,12 @@ public class ProcessDefinitionParser extends AbstractElementParser<ProcessDefini
         while (XmlParseUtil.nextChildElement(reader)) {
             Object element = this.readElement(reader, context);
             if (element instanceof BaseElement) {
+
+                if(element instanceof ExtensionElements){
+                    processDefinition.setExtensionElements((ExtensionElements)element);
+                }
+
+
                 elements.add((BaseElement) element);
                 if(element instanceof IdBasedElement){
                     IdBasedElement idBasedElement = (IdBasedElement)element;

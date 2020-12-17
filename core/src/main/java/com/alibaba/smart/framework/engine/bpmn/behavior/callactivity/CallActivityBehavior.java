@@ -1,14 +1,14 @@
 package com.alibaba.smart.framework.engine.bpmn.behavior.callactivity;
 
+import java.util.Map;
+
 import com.alibaba.smart.framework.engine.behavior.base.AbstractActivityBehavior;
 import com.alibaba.smart.framework.engine.bpmn.assembly.callactivity.CallActivity;
 import com.alibaba.smart.framework.engine.configuration.scanner.AnnotationScanner;
 import com.alibaba.smart.framework.engine.context.ExecutionContext;
-import com.alibaba.smart.framework.engine.context.factory.InstanceContextFactory;
-import com.alibaba.smart.framework.engine.deployment.ProcessDefinitionContainer;
+import com.alibaba.smart.framework.engine.context.factory.ContextFactory;
 import com.alibaba.smart.framework.engine.extension.annoation.ExtensionBinding;
 import com.alibaba.smart.framework.engine.extension.constant.ExtensionConstant;
-import com.alibaba.smart.framework.engine.model.assembly.ProcessDefinition;
 import com.alibaba.smart.framework.engine.model.instance.ExecutionInstance;
 import com.alibaba.smart.framework.engine.model.instance.InstanceStatus;
 import com.alibaba.smart.framework.engine.model.instance.ProcessInstance;
@@ -37,42 +37,60 @@ public class CallActivityBehavior extends AbstractActivityBehavior<CallActivity>
 
         ProcessInstance processInstance = context.getProcessInstance();
         ExecutionInstance executionInstance = context.getExecutionInstance();
-        return this.call(processInstance.getInstanceId(), executionInstance.getInstanceId(),
+
+        boolean needPause = this.startChildProcessInstance(processInstance.getInstanceId(), executionInstance.getInstanceId(),
             callActivity, context);
+
+        return needPause;
     }
 
-    //TODO ettear 与DefaultProcessCommandService的逻辑合并
-    private boolean call(String parentInstanceId, String parentExecutionInstanceId,CallActivity callActivity, ExecutionContext context) {
+    private boolean startChildProcessInstance(String parentInstanceId, String parentExecutionInstanceId, CallActivity callActivity, ExecutionContext parentContext) {
 
         String processDefinitionId =  callActivity.getCalledElement();
-        String version = callActivity.getCalledElementVersion();
+        String processDefinitionVersion = callActivity.getCalledElementVersion();
+
+
+        Map<String, Object> request = parentContext.getRequest();
+        Map<String, Object> response = parentContext.getResponse();
+
 
         AnnotationScanner annotationScanner = processEngineConfiguration.getAnnotationScanner();
 
-        ExecutionContext subContext = annotationScanner.getExtensionPoint(ExtensionConstant.COMMON,InstanceContextFactory.class)
-            .create();
-        subContext.setParent(context);
+        ProcessInstance childProcessInstance = processInstanceFactory.createChild(processEngineConfiguration,   processDefinitionId,processDefinitionVersion,
+            request,  parentInstanceId,   parentExecutionInstanceId);
 
-        subContext.setProcessEngineConfiguration(processEngineConfiguration);
-        subContext.setRequest(context.getRequest());
 
-        ProcessDefinition pvmProcessDefinition = annotationScanner.getExtensionPoint(ExtensionConstant.SERVICE,
-            ProcessDefinitionContainer.class).getProcessDefinition(processDefinitionId, version);
-        subContext.setProcessDefinition(pvmProcessDefinition);
+        ExecutionContext subContext = annotationScanner.getExtensionPoint(ExtensionConstant.COMMON, ContextFactory.class)
+            .create( processEngineConfiguration , childProcessInstance,
+                  request,   response,parentContext);
+
 
         // TUNE 减少不必要的对象创建
         PvmProcessInstance pvmProcessInstance = new DefaultPvmProcessInstance();
 
-        ProcessInstance subProcessInstance = processInstanceFactory.create(subContext);
-        subProcessInstance.setParentInstanceId(parentInstanceId);
-        subProcessInstance.setParentExecutionInstanceId(parentExecutionInstanceId);
+        CommonServiceHelper.tryInsertProcessInstanceIfNeedLock(processEngineConfiguration, childProcessInstance);
 
-        subContext.setProcessInstance(subProcessInstance);
+        childProcessInstance = pvmProcessInstance.start(subContext);
 
-        subProcessInstance = pvmProcessInstance.start(subContext);
+        childProcessInstance = CommonServiceHelper.insertAndPersist(childProcessInstance, request, processEngineConfiguration);
 
-        subProcessInstance = CommonServiceHelper.insertAndPersist(subProcessInstance, context.getRequest(), processEngineConfiguration);
+        InstanceStatus childProcessInstanceStatus = childProcessInstance.getStatus();
 
-        return InstanceStatus.completed!=subProcessInstance.getStatus();
+        //如果子流程完成，则需要返回到父流程继续执行；否则，则暂停
+        boolean childProcessInstanceCompleted = InstanceStatus.completed.equals(childProcessInstanceStatus);
+
+        if(childProcessInstanceCompleted){
+            return  false;
+        }else {
+            return true;
+        }
     }
+
+    //@Override
+    //public void execute(ExecutionContext context, PvmActivity pvmActivity) {
+    //
+    //   throw new SignalException("cant be signal");
+    //
+    //}
+
 }

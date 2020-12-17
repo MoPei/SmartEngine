@@ -8,23 +8,24 @@ import javax.xml.stream.XMLStreamReader;
 
 import com.alibaba.smart.framework.engine.exception.ParseException;
 import com.alibaba.smart.framework.engine.model.assembly.BaseElement;
-import com.alibaba.smart.framework.engine.model.assembly.ExtensionBasedElement;
+import com.alibaba.smart.framework.engine.model.assembly.ExtensionElementContainer;
 import com.alibaba.smart.framework.engine.model.assembly.ExtensionElements;
 import com.alibaba.smart.framework.engine.xml.parser.AbstractElementParser;
 import com.alibaba.smart.framework.engine.xml.parser.ParseContext;
+import com.alibaba.smart.framework.engine.xml.util.XmlParseUtil;
 
 /**
  * Created by ettear on 16-4-29.
  */
-public abstract class AbstractBpmnParser<M extends ExtensionBasedElement> extends AbstractElementParser<M> {
+public abstract class AbstractBpmnParser<M extends BaseElement> extends AbstractElementParser<M> {
 
 
 
     @Override
     protected void decorateChild(M model, BaseElement child) {
         if(!this.parseModelChild(model, child)) {
-            if (child instanceof ExtensionElements) {
-                model.setExtensionElements((ExtensionElements)child);
+            if ( (model instanceof ExtensionElementContainer) && (child instanceof ExtensionElements) ) {
+                ((ExtensionElementContainer) model).setExtensionElements((ExtensionElements)child);
             }
 
 
@@ -44,28 +45,6 @@ public abstract class AbstractBpmnParser<M extends ExtensionBasedElement> extend
     }
 
     protected Map<String, String> parseExtendedProperties(XMLStreamReader reader, ParseContext context) {
-
-        Map<String,String> properties = new HashMap();
-
-        int attributeCount=reader.getAttributeCount();
-        if(attributeCount>0){
-            for (int i = 0; i < attributeCount; i++) {
-                QName attributeName=reader.getAttributeName(i);
-
-                String localPart = attributeName.getLocalPart();
-
-                if("id".equals(localPart)||"name".equals(localPart)){
-                    continue;
-                }
-
-                Object value=reader.getAttributeValue(attributeName.getNamespaceURI(), localPart);
-                properties.put(localPart,(String)value);
-
-
-            }
-        }
-
-
-        return properties;
+        return XmlParseUtil.parseExtendedProperties(reader, context);
     }
 }

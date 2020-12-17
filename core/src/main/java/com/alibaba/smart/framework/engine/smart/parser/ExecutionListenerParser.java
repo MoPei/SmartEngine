@@ -11,6 +11,8 @@ import com.alibaba.smart.framework.engine.xml.parser.AbstractElementParser;
 import com.alibaba.smart.framework.engine.xml.parser.ParseContext;
 import com.alibaba.smart.framework.engine.xml.util.XmlParseUtil;
 
+import java.util.List;
+
 /**
  * @author ettear
  * Created by ettear on 06/08/2017.
@@ -18,9 +20,7 @@ import com.alibaba.smart.framework.engine.xml.util.XmlParseUtil;
 @ExtensionBinding(group = ExtensionConstant.ELEMENT_PARSER, bindKey = ExecutionListener.class)
 
 public class ExecutionListenerParser extends AbstractElementParser<ExecutionListener>
-       {
-
-
+{
 
     @Override
     protected ExecutionListener parseModel(XMLStreamReader reader, ParseContext context) {
@@ -38,13 +38,6 @@ public class ExecutionListenerParser extends AbstractElementParser<ExecutionList
         }else{
             throw new EngineException("Events can not be empty for ExecutionListener");
         }
-    }
-
-   
-
-    @Override
-    public QName getQname() {
-        return ExecutionListener.type;
     }
 
     @Override

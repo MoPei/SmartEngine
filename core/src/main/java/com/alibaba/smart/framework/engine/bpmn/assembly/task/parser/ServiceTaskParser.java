@@ -17,12 +17,6 @@ import com.alibaba.smart.framework.engine.xml.util.XmlParseUtil;
 
 public class ServiceTaskParser extends AbstractBpmnParser<ServiceTask> {
 
-
-    @Override
-    public QName getQname() {
-        return ServiceTask.type;
-    }
-
     @Override
     public Class<ServiceTask> getModelType() {
         return ServiceTask.class;

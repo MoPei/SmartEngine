@@ -16,6 +16,9 @@ import com.alibaba.smart.framework.engine.xml.util.XmlParseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * @author ettear
  * Created by ettear on 06/08/2017.
@@ -110,7 +113,5 @@ public abstract class AbstractElementParser<M extends BaseElement> implements El
     protected void decorateChild(M model, BaseElement child) {
 
     }
-
-
 
 }

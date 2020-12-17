@@ -10,16 +10,15 @@ import com.alibaba.smart.framework.engine.xml.parser.AbstractElementParser;
 import com.alibaba.smart.framework.engine.xml.parser.ParseContext;
 import com.alibaba.smart.framework.engine.xml.util.XmlParseUtil;
 
+import java.util.List;
+
 /**
  * @author ettear
  * Created by ettear on 06/08/2017.
  */
 
 @ExtensionBinding(group = ExtensionConstant.ELEMENT_PARSER, bindKey = Value.class)
-
 public class ValueParser extends AbstractElementParser<Value> {
-
-
 
     @Override
     protected Value parseModel(XMLStreamReader reader, ParseContext context) {
@@ -27,12 +26,6 @@ public class ValueParser extends AbstractElementParser<Value> {
         value.setName(XmlParseUtil.getString(reader, "name"));
         value.setValue(XmlParseUtil.getString(reader, "value"));
         return value;
-    }
-
-
-    @Override
-    public QName getQname() {
-        return Value.type;
     }
 
     @Override

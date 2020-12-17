@@ -13,19 +13,36 @@ import com.alibaba.smart.framework.engine.service.command.RepositoryCommandServi
 import com.alibaba.smart.framework.engine.util.ClassUtil;
 import com.alibaba.smart.framework.engine.util.IOUtil;
 
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SmartEngineFactoryBean implements FactoryBean<SmartEngine>, InitializingBean {
+public class SmartEngineFactoryBean implements FactoryBean<SmartEngine>, InitializingBean, ApplicationContextAware {
 
     private SmartEngine smartEngine;
 
-    private InstanceAccessor defaultInstanceAccessService = new DefaultInstanceAccessor();
+    //private InstanceAccessor defaultInstanceAccessService = new DefaultInstanceAccessor();
+
+    private static ApplicationContext applicationContext;
+
+    public static ApplicationContext getApplicationContext() {
+        return applicationContext;
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        SmartEngineFactoryBean.applicationContext = applicationContext;
+    }
+
+    public static Object getBean(String beanId) throws BeansException {
+        return applicationContext.getBean(beanId);
+    }
 
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -77,10 +94,7 @@ public class SmartEngineFactoryBean implements FactoryBean<SmartEngine>, Initial
         public Object access(String classNameOrBeanName) {
             try {
                 Class clazz = ClassUtil.getContextClassLoader().loadClass(classNameOrBeanName);
-                Object bean = ApplicationContextUtil.getBean(clazz);
-                return bean;
-            } catch (NoSuchBeanDefinitionException e) {
-                Object bean = defaultInstanceAccessService.access(classNameOrBeanName);
+                Object bean = applicationContext.getBean(clazz);
                 return bean;
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);

@@ -20,12 +20,6 @@ public class InputDataItemParser extends AbstractElementParser<InputDataItem>
       {
 
 
-
-    @Override
-    public QName getQname() {
-        return InputDataItem.type;
-    }
-
     @Override
     public Class<InputDataItem> getModelType() {
         return InputDataItem.class;
