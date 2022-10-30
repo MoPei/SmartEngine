@@ -1,9 +1,7 @@
 package com.alibaba.smart.framework.engine.bpmn.assembly.process.parser;
 
-import java.util.HashMap;
 import java.util.Map;
 
-import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamReader;
 
 import com.alibaba.smart.framework.engine.exception.ParseException;
@@ -22,7 +20,7 @@ public abstract class AbstractBpmnParser<M extends BaseElement> extends Abstract
 
 
     @Override
-    protected void decorateChild(M model, BaseElement child) {
+    protected void decorateChild(M model, BaseElement child, ParseContext context) {
         if(!this.parseModelChild(model, child)) {
             if ( (model instanceof ExtensionElementContainer) && (child instanceof ExtensionElements) ) {
                 ((ExtensionElementContainer) model).setExtensionElements((ExtensionElements)child);

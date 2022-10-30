@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.alibaba.smart.framework.engine.common.util.CollectionUtil;
 import com.alibaba.smart.framework.engine.common.util.DateUtil;
+import com.alibaba.smart.framework.engine.common.util.InstanceUtil;
 import com.alibaba.smart.framework.engine.common.util.MarkDoneUtil;
 import com.alibaba.smart.framework.engine.configuration.ConfigurationOption;
 import com.alibaba.smart.framework.engine.configuration.IdGenerator;
@@ -27,13 +28,10 @@ import com.alibaba.smart.framework.engine.instance.storage.ExecutionInstanceStor
 import com.alibaba.smart.framework.engine.instance.storage.ProcessInstanceStorage;
 import com.alibaba.smart.framework.engine.instance.storage.TaskAssigneeStorage;
 import com.alibaba.smart.framework.engine.instance.storage.TaskInstanceStorage;
-import com.alibaba.smart.framework.engine.model.instance.ExecutionInstance;
-import com.alibaba.smart.framework.engine.model.instance.TaskAssigneeCandidateInstance;
-import com.alibaba.smart.framework.engine.model.instance.TaskAssigneeInstance;
-import com.alibaba.smart.framework.engine.model.instance.TaskInstance;
+import com.alibaba.smart.framework.engine.model.instance.*;
 import com.alibaba.smart.framework.engine.service.command.ExecutionCommandService;
 import com.alibaba.smart.framework.engine.service.command.TaskCommandService;
-import com.alibaba.smart.framework.engine.util.ObjUtil;
+import com.alibaba.smart.framework.engine.util.ObjectUtil;
 
 /**
  * @author 高海军 帝奇  2016.11.11
@@ -71,24 +69,24 @@ public class DefaultTaskCommandService implements TaskCommandService, LifeCycleH
 
 
     @Override
-    public void complete(String taskId, Map<String, Object> request, Map<String, Object> response) {
+    public ProcessInstance complete(String taskId, Map<String, Object> request, Map<String, Object> response) {
 
 
         TaskInstance taskInstance = taskInstanceStorage.find(taskId,processEngineConfiguration );
         MarkDoneUtil.markDoneTaskInstance(taskInstance, TaskInstanceConstant.COMPLETED, TaskInstanceConstant.PENDING,
             request, taskInstanceStorage, processEngineConfiguration);
 
-        executionCommandService.signal(taskInstance.getExecutionInstanceId(), request,response);
+       return  executionCommandService.signal(taskInstance.getExecutionInstanceId(), request,response);
 
     }
 
     @Override
-    public void complete(String taskId, Map<String, Object> request) {
-        this.complete(taskId,request,null);
+    public ProcessInstance complete(String taskId, Map<String, Object> request) {
+      return   this.complete(taskId,request,null);
     }
 
     @Override
-    public void complete(String taskId, String userId, Map<String, Object> request) {
+    public ProcessInstance complete(String taskId, String userId, Map<String, Object> request) {
         if(null == request){
             request = new HashMap<String, Object>();
         }
@@ -96,7 +94,7 @@ public class DefaultTaskCommandService implements TaskCommandService, LifeCycleH
 
         //TUNE check privilege
 
-        complete(  taskId, request);
+      return   complete(  taskId, request);
     }
 
     @Override
@@ -151,47 +149,38 @@ public class DefaultTaskCommandService implements TaskCommandService, LifeCycleH
         taskInstance.setProcessInstanceId(executionInstance.getProcessInstanceId());
 
         taskInstance.setStatus(taskInstanceStatus);
-        String id = idGenerator.getId();
-        taskInstance.setInstanceId(id);
-
+        idGenerator.generate(taskInstance);
 
         if(null != request){
 
-            String processDefinitionType = ObjUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.PROCESS_DEFINITION_TYPE));
+            String processDefinitionType = ObjectUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.PROCESS_DEFINITION_TYPE));
             taskInstance.setProcessDefinitionType(processDefinitionType);
 
-            Date startTime = ObjUtil.obj2Date(request.get(RequestMapSpecialKeyConstant.TASK_START_TIME));
+            Date startTime = ObjectUtil.obj2Date(request.get(RequestMapSpecialKeyConstant.TASK_START_TIME));
             taskInstance.setStartTime(startTime);
 
-            Date completeTime = ObjUtil.obj2Date(request.get(RequestMapSpecialKeyConstant.TASK_COMPLETE_TIME));
+            Date completeTime = ObjectUtil.obj2Date(request.get(RequestMapSpecialKeyConstant.TASK_COMPLETE_TIME));
             taskInstance.setCompleteTime(completeTime);
 
-            String comment = ObjUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.TASK_INSTANCE_COMMENT));
-            taskInstance.setComment(comment);
-
-            String extension = ObjUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.TASK_INSTANCE_EXTENSION));
-            taskInstance.setExtension(extension);
-
-            Integer priority = ObjUtil.obj2Integer(request.get(RequestMapSpecialKeyConstant.TASK_INSTANCE_PRIORITY));
-            taskInstance.setPriority(priority);
-
-            String tag = ObjUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.TASK_INSTANCE_TAG));
-            taskInstance.setTag(tag);
-
-            String title = ObjUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.TASK_TITLE));
-            taskInstance.setTitle(title);
-
-            String claimUserId = ObjUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.CLAIM_USER_ID));
+            String claimUserId = ObjectUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.CLAIM_USER_ID));
             taskInstance.setClaimUserId(claimUserId);
 
-            Date claimTime = ObjUtil.obj2Date(request.get(RequestMapSpecialKeyConstant.CLAIM_USER_TIME));
+            Date claimTime = ObjectUtil.obj2Date(request.get(RequestMapSpecialKeyConstant.CLAIM_USER_TIME));
             taskInstance.setClaimTime(claimTime);
+
+            String tag = ObjectUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.TASK_INSTANCE_TAG));
+            taskInstance.setTag(tag);
+
         }
 
+        InstanceUtil.enrich(request, taskInstance);
 
-        taskInstanceStorage.insert(taskInstance,processEngineConfiguration);
+        //reAssign
+        taskInstance = taskInstanceStorage.insert(taskInstance,processEngineConfiguration);
+
         return taskInstance;
     }
+
 
     @Override
     public void addTaskAssigneeCandidate(String taskId, TaskAssigneeCandidateInstance taskAssigneeCandidateInstance) {
@@ -206,7 +195,7 @@ public class DefaultTaskCommandService implements TaskCommandService, LifeCycleH
         taskAssigneeInstance.setAssigneeId(taskAssigneeCandidateInstance.getAssigneeId());
         taskAssigneeInstance.setAssigneeType(taskAssigneeCandidateInstance.getAssigneeType());
 
-        taskAssigneeInstance.setInstanceId(processEngineConfiguration.getIdGenerator().getId());
+        processEngineConfiguration.getIdGenerator().generate(taskAssigneeInstance);
 
         Date currentDate = DateUtil.getCurrentDate();
         taskAssigneeInstance.setStartTime(currentDate);

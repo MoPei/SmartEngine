@@ -6,12 +6,12 @@ import java.util.List;
 
 import com.alibaba.smart.framework.engine.configuration.ProcessEngineConfiguration;
 import com.alibaba.smart.framework.engine.configuration.TableSchemaStrategy;
+import com.alibaba.smart.framework.engine.exception.EngineException;
 import com.alibaba.smart.framework.engine.extension.annoation.ExtensionBinding;
 import com.alibaba.smart.framework.engine.extension.constant.ExtensionConstant;
 import com.alibaba.smart.framework.engine.instance.impl.DefaultActivityInstance;
 import com.alibaba.smart.framework.engine.instance.storage.ActivityInstanceStorage;
 import com.alibaba.smart.framework.engine.model.instance.ActivityInstance;
-
 import com.alibaba.smart.framework.engine.persister.mongo.entity.ActivityInstanceEntity;
 
 import org.springframework.data.domain.Sort;
@@ -19,6 +19,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 
+import static com.alibaba.smart.framework.engine.persister.common.constant.StorageConstant.NOT_IMPLEMENT_INTENTIONALLY;
 import static com.alibaba.smart.framework.engine.persister.mongo.constant.MongoConstant.GMT_CREATE;
 import static com.alibaba.smart.framework.engine.persister.mongo.constant.MongoConstant.MONGO_TEMPLATE;
 import static com.alibaba.smart.framework.engine.persister.mongo.constant.MongoConstant.PROCESS_INSTANCE_ID;
@@ -86,6 +87,12 @@ public class MongoActivityInstanceStorage implements ActivityInstanceStorage {
         return activityInstance;
     }
 
+    @Override
+    public ActivityInstance findWithShading(String processInstanceId, String activityInstanceId,
+            ProcessEngineConfiguration processEngineConfiguration) {
+        throw new EngineException(NOT_IMPLEMENT_INTENTIONALLY);
+    }
+
     private ActivityInstance buildInstance(ActivityInstanceEntity entity) {
 
         ActivityInstance  activityInstance = new DefaultActivityInstance();
@@ -120,7 +127,8 @@ public class MongoActivityInstanceStorage implements ActivityInstanceStorage {
 
         Query query = new Query();
         query.addCriteria(Criteria.where(PROCESS_INSTANCE_ID).is(processInstanceId));
-        query.with( new Sort(Sort.Direction.ASC, GMT_CREATE));
+        //这个地方存在逻辑不一致性, MySQL采用了按创建日期倒序，MongDB采用了按创建日期正序
+        query.with( Sort.by(Sort.Direction.ASC, GMT_CREATE));
 
         List<ActivityInstanceEntity> activityInstanceEntityList = mongoTemplate.find(query,ActivityInstanceEntity.class,collectionName);
 

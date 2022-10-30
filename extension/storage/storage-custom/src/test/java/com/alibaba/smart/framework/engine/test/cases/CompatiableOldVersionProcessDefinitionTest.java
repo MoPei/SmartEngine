@@ -1,25 +1,17 @@
 package com.alibaba.smart.framework.engine.test.cases;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import javax.xml.namespace.QName;
-
 import com.alibaba.smart.framework.engine.bpmn.constant.BpmnNameSpaceConstant;
-import com.alibaba.smart.framework.engine.configuration.LockStrategy;
-import com.alibaba.smart.framework.engine.configuration.impl.DefaultProcessEngineConfiguration;
 import com.alibaba.smart.framework.engine.constant.ExtensionElementsConstant;
 import com.alibaba.smart.framework.engine.constant.SmartBase;
 import com.alibaba.smart.framework.engine.model.assembly.ExtensionElementContainer;
 import com.alibaba.smart.framework.engine.model.assembly.ExtensionElements;
 import com.alibaba.smart.framework.engine.model.assembly.IdBasedElement;
 import com.alibaba.smart.framework.engine.model.assembly.ProcessDefinition;
-import com.alibaba.smart.framework.engine.model.instance.ProcessInstance;
-import com.alibaba.smart.framework.engine.service.command.ProcessCommandService;
 import com.alibaba.smart.framework.engine.smart.PropertyCompositeKey;
-import com.alibaba.smart.framework.engine.test.DoNothingLockStrategy;
+import com.alibaba.smart.framework.engine.smart.PropertyCompositeValue;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -31,7 +23,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class CompatiableOldVersionProcessDefinitionTest extends CustomBaseTestCase {
 
-    protected void initProcessConfiguation() {
+    protected void initProcessConfiguration() {
         Map<String,Object> magicExtension = new HashMap();
 
         Map<String,String> tuples = new HashMap<String, String>();
@@ -74,7 +66,8 @@ public class CompatiableOldVersionProcessDefinitionTest extends CustomBaseTestCa
         Assert.assertTrue(flag);
 
 
-        Assert.assertEquals("process.inParam1", map.get(key));
+        PropertyCompositeValue actual = (PropertyCompositeValue) map.get(key);
+        Assert.assertEquals("process.inParam1", actual.getAttrMap().get("value"));
 
     }
 

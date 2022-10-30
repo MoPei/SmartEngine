@@ -1,9 +1,8 @@
 package com.alibaba.smart.framework.engine.test.process.helper;
 
 import com.alibaba.smart.framework.engine.configuration.LockStrategy;
+import com.alibaba.smart.framework.engine.context.ExecutionContext;
 import com.alibaba.smart.framework.engine.exception.LockException;
-
-import com.alibaba.smart.framework.engine.persister.database.dao.ProcessInstanceDAO;
 
 import org.springframework.stereotype.Service;
 
@@ -15,7 +14,7 @@ public class DoNothingLockStrategy implements LockStrategy {
 
 
     @Override
-    public void tryLock(String processInstanceId) throws LockException {
+    public void tryLock(String processInstanceId, ExecutionContext context) throws LockException {
         //ExtensionPointRegistry extensionPointRegistry = smartEngine.getProcessEngineConfiguration()
         //    .getExtensionPointRegistry();
         //PersisterFactoryExtensionPoint persisterFactoryExtensionPoint = extensionPointRegistry.getExtensionPoint(PersisterFactoryExtensionPoint.class);
@@ -29,10 +28,21 @@ public class DoNothingLockStrategy implements LockStrategy {
         //processInstanceDAO.tryLock(Long.valueOf(processInstanceId));
 
         //可以是设置 db uniqueKey 唯一索引； 或者在插入后直接再锁上； 或者使用其他中间件。
+
+        //String processDefinitionActivityId = context.getExecutionInstance().getProcessDefinitionActivityId();
+        //
+        //ProcessDefinition processDefinition = context.getProcessDefinition();
+        //
+        //IdBasedElement idBasedElement = processDefinition.getIdBasedElementMap().get(processDefinitionActivityId);
+
+
+
     }
 
     @Override
-    public void unLock(String processInstanceId) throws LockException {
+    public void unLock(String processInstanceId, ExecutionContext context) throws LockException {
         //do nothing
     }
+
+
 }

@@ -1,14 +1,12 @@
 package com.alibaba.smart.framework.engine.test.cases.extensions;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import com.alibaba.smart.framework.engine.constant.ExtensionElementsConstant;
 import com.alibaba.smart.framework.engine.model.assembly.ExtensionElements;
 import com.alibaba.smart.framework.engine.model.assembly.ProcessDefinition;
-import com.alibaba.smart.framework.engine.model.instance.InstanceStatus;
-import com.alibaba.smart.framework.engine.model.instance.ProcessInstance;
 import com.alibaba.smart.framework.engine.smart.PropertyCompositeKey;
+import com.alibaba.smart.framework.engine.smart.PropertyCompositeValue;
 import com.alibaba.smart.framework.engine.test.cases.CustomBaseTestCase;
 
 import org.junit.Assert;
@@ -35,9 +33,8 @@ public class CompositePropertyTest extends CustomBaseTestCase {
         boolean flag = map.containsKey(key);
         Assert.assertTrue(flag);
 
-        Object value = map.get(key);
-        Assert.assertEquals("{}",value);
-
+        PropertyCompositeValue value = (PropertyCompositeValue) map.get(key);
+        Assert.assertEquals("{}",value.getAttrMap().get("value"));
     }
 
 }

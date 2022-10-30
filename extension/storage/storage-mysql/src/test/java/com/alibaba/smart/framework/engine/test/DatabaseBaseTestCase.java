@@ -4,14 +4,15 @@ import com.alibaba.smart.framework.engine.SmartEngine;
 import com.alibaba.smart.framework.engine.configuration.InstanceAccessor;
 import com.alibaba.smart.framework.engine.configuration.ProcessEngineConfiguration;
 import com.alibaba.smart.framework.engine.configuration.impl.DefaultProcessEngineConfiguration;
+import com.alibaba.smart.framework.engine.configuration.impl.DefaultSmartEngine;
 import com.alibaba.smart.framework.engine.configuration.scanner.AnnotationScanner;
 import com.alibaba.smart.framework.engine.extension.scanner.SimpleAnnotationScanner;
-import com.alibaba.smart.framework.engine.configuration.impl.DefaultSmartEngine;
 import com.alibaba.smart.framework.engine.service.command.DeploymentCommandService;
 import com.alibaba.smart.framework.engine.service.command.ExecutionCommandService;
 import com.alibaba.smart.framework.engine.service.command.ProcessCommandService;
 import com.alibaba.smart.framework.engine.service.command.RepositoryCommandService;
 import com.alibaba.smart.framework.engine.service.command.TaskCommandService;
+import com.alibaba.smart.framework.engine.service.command.VariableCommandService;
 import com.alibaba.smart.framework.engine.service.query.ActivityQueryService;
 import com.alibaba.smart.framework.engine.service.query.DeploymentQueryService;
 import com.alibaba.smart.framework.engine.service.query.ExecutionQueryService;
@@ -20,8 +21,8 @@ import com.alibaba.smart.framework.engine.service.query.RepositoryQueryService;
 import com.alibaba.smart.framework.engine.service.query.TaskAssigneeQueryService;
 import com.alibaba.smart.framework.engine.service.query.TaskQueryService;
 import com.alibaba.smart.framework.engine.service.query.VariableQueryService;
-import com.alibaba.smart.framework.engine.test.process.helper.sequece.RandomIdGenerator;
 import com.alibaba.smart.framework.engine.test.process.helper.dispatcher.DefaultTaskAssigneeDispatcher;
+import com.alibaba.smart.framework.engine.test.process.helper.sequece.RandomIdGenerator;
 import com.alibaba.smart.framework.engine.util.ClassUtil;
 
 import org.junit.After;
@@ -30,7 +31,9 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.stereotype.Service;
 
+@Service
 public class DatabaseBaseTestCase implements ApplicationContextAware {
 
     private ApplicationContext applicationContext;
@@ -54,6 +57,8 @@ public class DatabaseBaseTestCase implements ApplicationContextAware {
 
     protected DeploymentCommandService deploymentCommandService;
     protected DeploymentQueryService deploymentQueryService;
+
+    protected VariableCommandService variableCommandService;
     protected VariableQueryService variableQueryService;
     protected TaskAssigneeQueryService taskAssigneeQueryService;
 
@@ -89,6 +94,8 @@ public class DatabaseBaseTestCase implements ApplicationContextAware {
         variableQueryService = smartEngine.getVariableQueryService();
         taskAssigneeQueryService = smartEngine.getTaskAssigneeQueryService();
 
+        variableCommandService  = smartEngine.getVariableCommandService();
+
 
     }
 
@@ -114,14 +121,8 @@ public class DatabaseBaseTestCase implements ApplicationContextAware {
         @Override
         public Object access(String name) {
 
-            try {
                 Object bean = applicationContext.getBean(name);
                 return bean;
-
-            }catch (NoSuchBeanDefinitionException exception){
-                return ClassUtil.createOrGetInstance(name);
-
-            }
 
         }
 

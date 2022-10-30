@@ -1,6 +1,5 @@
 package com.alibaba.smart.framework.engine.smart.parser;
 
-import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamReader;
 
 import com.alibaba.smart.framework.engine.exception.EngineException;
@@ -11,16 +10,12 @@ import com.alibaba.smart.framework.engine.xml.parser.AbstractElementParser;
 import com.alibaba.smart.framework.engine.xml.parser.ParseContext;
 import com.alibaba.smart.framework.engine.xml.util.XmlParseUtil;
 
-import java.util.List;
-
 /**
  * @author ettear
  * Created by ettear on 06/08/2017.
  */
 @ExtensionBinding(group = ExtensionConstant.ELEMENT_PARSER, bindKey = ExecutionListener.class)
-
-public class ExecutionListenerParser extends AbstractElementParser<ExecutionListener>
-{
+public class ExecutionListenerParser extends AbstractElementParser<ExecutionListener> {
 
     @Override
     protected ExecutionListener parseModel(XMLStreamReader reader, ParseContext context) {

@@ -1,17 +1,8 @@
 package com.alibaba.smart.framework.engine.pvm.impl;
 
-import java.util.List;
-
 import com.alibaba.smart.framework.engine.behavior.ActivityBehavior;
-import com.alibaba.smart.framework.engine.common.util.CollectionUtil;
-import com.alibaba.smart.framework.engine.configuration.InstanceAccessor;
-import com.alibaba.smart.framework.engine.constant.ExtensionElementsConstant;
 import com.alibaba.smart.framework.engine.context.ExecutionContext;
-import com.alibaba.smart.framework.engine.listener.Listener;
-import com.alibaba.smart.framework.engine.listener.ListenerAggregation;
-import com.alibaba.smart.framework.engine.model.assembly.ExtensionElements;
 import com.alibaba.smart.framework.engine.pvm.PvmActivity;
-import com.alibaba.smart.framework.engine.pvm.event.PvmEventConstant;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -31,7 +22,6 @@ public class DefaultPvmActivity extends AbstractPvmActivity implements PvmActivi
         ActivityBehavior behavior = this.getBehavior();
         boolean needPause= behavior.enter(context, this);
 
-        fireEvent(context,PvmEventConstant.ACTIVITY_START);
 
 
         if (needPause) {
@@ -43,11 +33,11 @@ public class DefaultPvmActivity extends AbstractPvmActivity implements PvmActivi
         this.execute(context);
     }
 
-    private void fireEvent(ExecutionContext context,PvmEventConstant event) {
-
-        context.getProcessEngineConfiguration().getListenerExecutor().execute(event,this.getModel(),context);
-
-    }
+    //protected void fireEvent(ExecutionContext context,PvmEventConstant event) {
+    //
+    //    context.getProcessEngineConfiguration().getListenerExecutor().execute(event,this.getModel(),context);
+    //
+    //}
 
     @Override
     public void execute(ExecutionContext context) {
@@ -55,15 +45,11 @@ public class DefaultPvmActivity extends AbstractPvmActivity implements PvmActivi
 
         this.getBehavior().execute(context,this);
 
-        fireEvent(context,PvmEventConstant.ACTIVITY_EXECUTE);
-
         if (context.isNeedPause()) {
 
             // break;
             return;
         }
-
-        fireEvent(context,PvmEventConstant.ACTIVITY_END);
 
         this.getBehavior().leave(context, this);
 

@@ -2,7 +2,6 @@ package com.alibaba.smart.framework.engine.bpmn.assembly.task.parser;
 
 import java.util.Map;
 
-import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamReader;
 
 import com.alibaba.smart.framework.engine.bpmn.assembly.multi.instance.MultiInstanceLoopCharacteristics;
@@ -38,11 +37,11 @@ public class UserTaskParser extends AbstractBpmnParser<UserTask> {
     }
 
     @Override
-    protected void decorateChild(UserTask userTask, BaseElement child) {
+    protected void decorateChild(UserTask userTask, BaseElement child, ParseContext context) {
         if (child instanceof MultiInstanceLoopCharacteristics) {
             userTask.setMultiInstanceLoopCharacteristics((MultiInstanceLoopCharacteristics) child);
         }else{
-            super.decorateChild(userTask,child);
+            super.decorateChild(userTask,child, context);
         }
     }
 

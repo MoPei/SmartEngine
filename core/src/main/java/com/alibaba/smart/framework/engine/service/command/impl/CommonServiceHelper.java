@@ -20,7 +20,6 @@ import com.alibaba.smart.framework.engine.instance.storage.TaskInstanceStorage;
 import com.alibaba.smart.framework.engine.instance.storage.VariableInstanceStorage;
 import com.alibaba.smart.framework.engine.model.instance.ActivityInstance;
 import com.alibaba.smart.framework.engine.model.instance.ExecutionInstance;
-import com.alibaba.smart.framework.engine.model.instance.InstanceStatus;
 import com.alibaba.smart.framework.engine.model.instance.ProcessInstance;
 import com.alibaba.smart.framework.engine.model.instance.TaskAssigneeInstance;
 import com.alibaba.smart.framework.engine.model.instance.TaskInstance;
@@ -32,14 +31,32 @@ import com.alibaba.smart.framework.engine.model.instance.VariableInstance;
 public abstract  class CommonServiceHelper {
 
 
-    public static void tryInsertProcessInstanceIfNeedLock(ProcessEngineConfiguration processEngineConfiguration,
-                                                    ProcessInstance processInstance) {
+    public static void tryLock(ProcessEngineConfiguration processEngineConfiguration,
+                               ProcessInstance processInstance) {
         LockStrategy lockStrategy = processEngineConfiguration.getLockStrategy();
         if(null != lockStrategy){
-            AnnotationScanner annotationScanner = processEngineConfiguration.getAnnotationScanner();
-            ProcessInstanceStorage processInstanceStorage = annotationScanner.getExtensionPoint(ExtensionConstant.COMMON,ProcessInstanceStorage.class);
-            ProcessInstance newProcessInstance =  processInstanceStorage.insert(processInstance, processEngineConfiguration);
-            lockStrategy.tryLock(newProcessInstance.getBizUniqueId());
+            String bizUniqueId = processInstance.getBizUniqueId();
+
+            if(null != bizUniqueId){
+                lockStrategy.tryLock(bizUniqueId,null);
+            }else {
+                lockStrategy.tryLock(processInstance.getInstanceId(),null);
+            }
+        }
+    }
+
+
+    public static void tryUnlock(ProcessEngineConfiguration processEngineConfiguration,
+                               ProcessInstance processInstance) {
+        LockStrategy lockStrategy = processEngineConfiguration.getLockStrategy();
+        if(null != lockStrategy){
+            String bizUniqueId = processInstance.getBizUniqueId();
+
+            if(null != bizUniqueId){
+                lockStrategy.unLock(bizUniqueId,null);
+            }else {
+                lockStrategy.unLock(processInstance.getInstanceId(),null);
+            }
         }
     }
 
@@ -47,22 +64,12 @@ public abstract  class CommonServiceHelper {
                                                    ProcessEngineConfiguration processEngineConfiguration) {
 
 
-        ProcessInstance newProcessInstance ;
-
         //TUNE 可以在对象创建时初始化,但是这里依赖稍微有点问题
         AnnotationScanner annotationScanner = processEngineConfiguration.getAnnotationScanner();
         ProcessInstanceStorage processInstanceStorage = annotationScanner.getExtensionPoint(
             ExtensionConstant.COMMON,ProcessInstanceStorage.class);
 
-        LockStrategy lockStrategy = processEngineConfiguration.getLockStrategy();
-        if(null != lockStrategy){
-
-            newProcessInstance =  processInstanceStorage.update(processInstance, processEngineConfiguration);
-
-        }else{
-             newProcessInstance =  processInstanceStorage.insert(processInstance, processEngineConfiguration);
-        }
-
+        ProcessInstance newProcessInstance =  processInstanceStorage.insert(processInstance, processEngineConfiguration);
 
         persisteVariableInstanceIfPossible(request, processEngineConfiguration,
             newProcessInstance, AdHocConstant.DEFAULT_ZERO_VALUE);
@@ -92,7 +99,7 @@ public abstract  class CommonServiceHelper {
                 Class type = value.getClass();
 
                 VariableInstance variableInstance = new DefaultVariableInstance();
-                variableInstance.setInstanceId(processEngineConfiguration.getIdGenerator().getId());
+                processEngineConfiguration.getIdGenerator().generate(variableInstance);
                 variableInstance.setProcessInstanceId(newProcessInstance.getInstanceId());
                 variableInstance.setExecutionInstanceId(executionInstanceId);
                 variableInstance.setFieldKey(key);

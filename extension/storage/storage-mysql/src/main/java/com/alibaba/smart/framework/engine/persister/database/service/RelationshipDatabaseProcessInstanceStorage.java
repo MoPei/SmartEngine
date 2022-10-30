@@ -11,7 +11,6 @@ import com.alibaba.smart.framework.engine.instance.impl.DefaultProcessInstance;
 import com.alibaba.smart.framework.engine.instance.storage.ProcessInstanceStorage;
 import com.alibaba.smart.framework.engine.model.instance.InstanceStatus;
 import com.alibaba.smart.framework.engine.model.instance.ProcessInstance;
-
 import com.alibaba.smart.framework.engine.persister.database.dao.ProcessInstanceDAO;
 import com.alibaba.smart.framework.engine.persister.database.entity.ProcessInstanceEntity;
 import com.alibaba.smart.framework.engine.service.param.query.ProcessInstanceQueryParam;
@@ -62,8 +61,14 @@ public class RelationshipDatabaseProcessInstanceStorage implements ProcessInstan
     private ProcessInstanceEntity buildEntityFromInstance(ProcessInstance processInstance) {
         ProcessInstanceEntity processInstanceEntityToBePersisted = new ProcessInstanceEntity();
         processInstanceEntityToBePersisted.setId(Long.valueOf(processInstance.getInstanceId()));
+
         processInstanceEntityToBePersisted.setGmtCreate(processInstance.getStartTime());
-        processInstanceEntityToBePersisted.setGmtModified(processInstance.getCompleteTime());
+
+        if( null != processInstance.getCompleteTime()){
+            processInstanceEntityToBePersisted.setGmtModified(processInstance.getCompleteTime());
+        }else {
+            processInstanceEntityToBePersisted.setGmtModified(processInstance.getStartTime());
+        }
 
         String parentInstanceId = processInstance.getParentInstanceId();
         if(null != parentInstanceId){
@@ -153,10 +158,10 @@ public class RelationshipDatabaseProcessInstanceStorage implements ProcessInstan
         ProcessInstanceDAO processInstanceDAO= (ProcessInstanceDAO)processEngineConfiguration.getInstanceAccessor().access("processInstanceDAO");
 
         ProcessInstanceEntity processInstanceEntity = processInstanceDAO.findOne(Long.valueOf(instanceId));
-
-        ProcessInstance processInstance = buildProcessInstanceFromEntity(processInstanceEntity);
-
-        return processInstance;
+        if (processInstanceEntity == null) {
+            return null;
+        }
+        return buildProcessInstanceFromEntity(processInstanceEntity);
     }
 
 

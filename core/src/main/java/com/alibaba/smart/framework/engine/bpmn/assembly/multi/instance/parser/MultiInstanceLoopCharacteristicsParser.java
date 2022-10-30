@@ -1,6 +1,5 @@
 package com.alibaba.smart.framework.engine.bpmn.assembly.multi.instance.parser;
 
-import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamReader;
 
 import com.alibaba.smart.framework.engine.bpmn.assembly.multi.instance.CompletionCondition;
@@ -36,7 +35,7 @@ public class MultiInstanceLoopCharacteristicsParser extends AbstractElementParse
     }
 
     @Override
-    protected void decorateChild(MultiInstanceLoopCharacteristics multiInstanceLoopCharacteristics, BaseElement child) {
+    protected void decorateChild(MultiInstanceLoopCharacteristics multiInstanceLoopCharacteristics, BaseElement child, ParseContext context) {
           if (child instanceof InputDataItem) {
             //ignore
         }

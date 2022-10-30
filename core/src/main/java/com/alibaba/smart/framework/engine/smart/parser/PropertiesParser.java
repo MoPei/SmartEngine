@@ -1,6 +1,5 @@
 package com.alibaba.smart.framework.engine.smart.parser;
 
-import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamReader;
 
 import com.alibaba.smart.framework.engine.exception.EngineException;
@@ -12,14 +11,11 @@ import com.alibaba.smart.framework.engine.smart.PropertiesElementMarker;
 import com.alibaba.smart.framework.engine.xml.parser.AbstractElementParser;
 import com.alibaba.smart.framework.engine.xml.parser.ParseContext;
 
-import java.util.List;
-
 /**
  * Extension Elements Parser Created by ettear on 16-4-14.
  */
 
 @ExtensionBinding(group = ExtensionConstant.ELEMENT_PARSER, bindKey = Properties.class)
-
 public class PropertiesParser extends AbstractElementParser<Properties> {
 
 
@@ -30,7 +26,7 @@ public class PropertiesParser extends AbstractElementParser<Properties> {
     }
 
     @Override
-    protected void decorateChild(Properties properties, BaseElement child) {
+    protected void decorateChild(Properties properties, BaseElement child, ParseContext context) {
         if (child instanceof PropertiesElementMarker) {
             properties.getExtensionList().add((PropertiesElementMarker)child);
         }else{

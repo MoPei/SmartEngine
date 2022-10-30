@@ -1,18 +1,17 @@
-package com.alibaba.smart.framework.engine.test.parallelgateway;
+package com.alibaba.smart.framework.engine.test.parallelgateway.orchestration.delegation;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import com.alibaba.smart.framework.engine.context.ExecutionContext;
 import com.alibaba.smart.framework.engine.delegation.JavaDelegation;
 import com.alibaba.smart.framework.engine.exception.EngineException;
 
-import lombok.Getter;
+import com.alibaba.smart.framework.engine.test.parallelgateway.orchestration.ThreadExecutionResult;
+import com.alibaba.smart.framework.engine.test.parallelgateway.single.thread.ServiceTaskDelegation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BServiceTaskOrchestrationDelegation implements JavaDelegation {
+public class AServiceTaskOrchestrationDelegation implements JavaDelegation {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceTaskDelegation.class);
 
@@ -25,6 +24,7 @@ public class BServiceTaskOrchestrationDelegation implements JavaDelegation {
         Long sleepTime = (Long)request.get( processDefinitionActivityId);
 
         long id = Thread.currentThread().getId();
+
         request.put(processDefinitionActivityId,new ThreadExecutionResult(id,sleepTime));
 
         try {

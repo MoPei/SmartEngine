@@ -1,6 +1,5 @@
 package com.alibaba.smart.framework.engine.bpmn.assembly.callactivity.parser;
 
-import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamReader;
 
 import com.alibaba.smart.framework.engine.bpmn.assembly.callactivity.CallActivity;
@@ -28,7 +27,16 @@ public class CallActivityParser  extends AbstractBpmnParser<CallActivity> {
         CallActivity callActivity = new CallActivity();
         callActivity.setId(XmlParseUtil.getString(reader, "id"));
         callActivity.setCalledElement(XmlParseUtil.getString(reader, "calledElement"));
-        callActivity.setCalledElementVersion(XmlParseUtil.getString(reader, "calledElementVersion"));
+        String calledElementVersion = XmlParseUtil.getString(reader, "calledElementVersion");
+
+        if(null == calledElementVersion){
+            calledElementVersion = XmlParseUtil.getString(reader, "calledElementVersionTag");
+        }
+
+        callActivity.setCalledElementVersion(calledElementVersion);
+
+
+
         return callActivity;
     }
 }

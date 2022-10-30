@@ -1,19 +1,15 @@
 package com.alibaba.smart.framework.engine.smart;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.namespace.QName;
-
-import com.alibaba.smart.framework.engine.bpmn.constant.BpmnNameSpaceConstant;
 import com.alibaba.smart.framework.engine.common.util.MapUtil;
 import com.alibaba.smart.framework.engine.constant.ExtensionElementsConstant;
-import com.alibaba.smart.framework.engine.constant.SmartBase;
 import com.alibaba.smart.framework.engine.model.assembly.ExtensionDecorator;
 import com.alibaba.smart.framework.engine.model.assembly.ExtensionElements;
 
+import com.alibaba.smart.framework.engine.xml.parser.ParseContext;
 import lombok.Data;
 
 /**
@@ -32,7 +28,7 @@ public class Properties implements ExtensionDecorator,CustomExtensionElement {
     }
 
     @Override
-    public void decorate(ExtensionElements extensionElements) {
+    public void decorate(ExtensionElements extensionElements, ParseContext context) {
         Map map =  (Map)extensionElements.getDecorationMap().get(getDecoratorType());
 
         if(null == map){
@@ -49,7 +45,11 @@ public class Properties implements ExtensionDecorator,CustomExtensionElement {
                 map.put(value.getName(),value.getValue());
             }else if (extensionDecorator instanceof  Property){
                 Property property = (Property)extensionDecorator;
-                map.put(new PropertyCompositeKey(property.getType(),property.getName()),property.getValue());
+
+                PropertyCompositeKey key = new PropertyCompositeKey(property.getType(), property.getName());
+                PropertyCompositeValue value = new PropertyCompositeValue(property.getValue(), property.getAttrs());
+
+                map.put(key, value);
             }
 
         }

@@ -17,6 +17,9 @@ public interface ExecutionInstanceStorage {
     ExecutionInstance find(String executionInstanceId,
                            ProcessEngineConfiguration processEngineConfiguration);
 
+    ExecutionInstance findWithShading(String processInstanceId, String executionInstanceId,
+            ProcessEngineConfiguration processEngineConfiguration);
+
     void remove(String executionInstanceId,
                 ProcessEngineConfiguration processEngineConfiguration);
 
@@ -26,4 +29,6 @@ public interface ExecutionInstanceStorage {
     List<ExecutionInstance> findByActivityInstanceId(String processInstanceId, String activityInstanceId,
                                                      ProcessEngineConfiguration processEngineConfiguration);
 
+    List<ExecutionInstance> findAll(String processInstanceId,
+                                   ProcessEngineConfiguration processEngineConfiguration);
 }

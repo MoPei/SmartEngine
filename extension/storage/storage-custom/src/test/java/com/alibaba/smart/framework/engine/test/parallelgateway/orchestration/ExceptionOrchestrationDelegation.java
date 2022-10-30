@@ -1,25 +1,18 @@
-package com.alibaba.smart.framework.engine.test.parallelgateway;
+package com.alibaba.smart.framework.engine.test.parallelgateway.orchestration;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import com.alibaba.smart.framework.engine.context.ExecutionContext;
 import com.alibaba.smart.framework.engine.delegation.JavaDelegation;
-import com.alibaba.smart.framework.engine.delegation.TccDelegation;
-import com.alibaba.smart.framework.engine.delegation.TccResult;
 import com.alibaba.smart.framework.engine.exception.EngineException;
 
-import lombok.Getter;
+import com.alibaba.smart.framework.engine.test.parallelgateway.single.thread.ServiceTaskDelegation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AServiceTaskOrchestrationDelegation implements JavaDelegation {
+public class ExceptionOrchestrationDelegation implements JavaDelegation {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceTaskDelegation.class);
-
 
 
     @Override
@@ -38,6 +31,8 @@ public class AServiceTaskOrchestrationDelegation implements JavaDelegation {
         } catch (InterruptedException e) {
             throw new EngineException(e);
         }
+
+        throw  new IllegalArgumentException("test");
 
     }
 }

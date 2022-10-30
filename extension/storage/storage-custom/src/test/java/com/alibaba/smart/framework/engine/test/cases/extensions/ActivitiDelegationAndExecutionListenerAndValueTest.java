@@ -10,6 +10,7 @@ import com.alibaba.smart.framework.engine.model.instance.InstanceStatus;
 import com.alibaba.smart.framework.engine.model.instance.ProcessInstance;
 import com.alibaba.smart.framework.engine.service.command.ProcessCommandService;
 import com.alibaba.smart.framework.engine.smart.PropertyCompositeKey;
+import com.alibaba.smart.framework.engine.smart.PropertyCompositeValue;
 import com.alibaba.smart.framework.engine.test.cases.CustomBaseTestCase;
 
 import org.junit.Assert;
@@ -52,7 +53,8 @@ public class ActivitiDelegationAndExecutionListenerAndValueTest extends CustomBa
 
         PropertyCompositeKey from = new PropertyCompositeKey("from");
 
-        Assert.assertEquals("koubei",response.get(from));
+        PropertyCompositeValue actual = (PropertyCompositeValue)response.get(from);
+        Assert.assertEquals("koubei", actual.getAttrMap().get("value"));
 
     }
 

@@ -1,5 +1,6 @@
 package com.alibaba.smart.framework.engine.persister.custom;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -82,6 +83,12 @@ public class CustomExecutionInstanceStorage implements ExecutionInstanceStorage 
 
     }
 
+    @Override
+    public ExecutionInstance findWithShading(String processInstanceId, String executionInstanceId,
+                                             ProcessEngineConfiguration processEngineConfiguration) {
+        throw new EngineException(NOT_IMPLEMENT_INTENTIONALLY);
+
+    }
 
     @Override
     public void remove(String instanceId,
@@ -119,5 +126,19 @@ public class CustomExecutionInstanceStorage implements ExecutionInstanceStorage 
             }
         }
         return null;
+    }
+
+    @Override
+    public List<ExecutionInstance> findAll(String processInstanceId, ProcessEngineConfiguration processEngineConfiguration) {
+        ProcessInstance processInstance= PersisterSession.currentSession().getProcessInstance(processInstanceId);
+        List<ActivityInstance> activityInstances = processInstance.getActivityInstances();
+        if (null == activityInstances || activityInstances.size() == 0) {
+            return null;
+        }
+        List<ExecutionInstance> executionInstances = new ArrayList<ExecutionInstance>();
+        for (ActivityInstance activityInstance : activityInstances) {
+            executionInstances.addAll(activityInstance.getExecutionInstanceList());
+        }
+        return executionInstances;
     }
 }

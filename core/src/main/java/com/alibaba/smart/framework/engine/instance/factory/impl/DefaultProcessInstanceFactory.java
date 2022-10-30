@@ -7,15 +7,13 @@ import com.alibaba.smart.framework.engine.common.util.IdAndVersionUtil;
 import com.alibaba.smart.framework.engine.configuration.IdGenerator;
 import com.alibaba.smart.framework.engine.configuration.ProcessEngineConfiguration;
 import com.alibaba.smart.framework.engine.constant.RequestMapSpecialKeyConstant;
-import com.alibaba.smart.framework.engine.context.ExecutionContext;
 import com.alibaba.smart.framework.engine.extension.annoation.ExtensionBinding;
 import com.alibaba.smart.framework.engine.extension.constant.ExtensionConstant;
 import com.alibaba.smart.framework.engine.instance.factory.ProcessInstanceFactory;
 import com.alibaba.smart.framework.engine.instance.impl.DefaultProcessInstance;
-import com.alibaba.smart.framework.engine.model.assembly.ProcessDefinition;
 import com.alibaba.smart.framework.engine.model.instance.InstanceStatus;
 import com.alibaba.smart.framework.engine.model.instance.ProcessInstance;
-import com.alibaba.smart.framework.engine.util.ObjUtil;
+import com.alibaba.smart.framework.engine.util.ObjectUtil;
 
 /**
  * 默认流程实例工厂实现 Created by ettear on 16-4-20.
@@ -29,7 +27,7 @@ public class DefaultProcessInstanceFactory implements ProcessInstanceFactory {
         DefaultProcessInstance defaultProcessInstance = new DefaultProcessInstance();
         IdGenerator idGenerator = processEngineConfiguration.getIdGenerator();
 
-        defaultProcessInstance.setInstanceId(idGenerator.getId());
+        idGenerator.generate(defaultProcessInstance);
         defaultProcessInstance.setStatus(InstanceStatus.running);
         defaultProcessInstance.setStartTime(DateUtil.getCurrentDate());
 
@@ -38,19 +36,19 @@ public class DefaultProcessInstanceFactory implements ProcessInstanceFactory {
         defaultProcessInstance.setProcessDefinitionVersion(processDefinitionVersion);
 
         if (null != request) {
-            String startUserId = ObjUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.PROCESS_INSTANCE_START_USER_ID));
+            String startUserId = ObjectUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.PROCESS_INSTANCE_START_USER_ID));
             defaultProcessInstance.setStartUserId(startUserId);
 
-            String processDefinitionType = ObjUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.PROCESS_DEFINITION_TYPE));
+            String processDefinitionType = ObjectUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.PROCESS_DEFINITION_TYPE));
             defaultProcessInstance.setProcessDefinitionType(processDefinitionType);
 
-            String bizUniqueId = ObjUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.PROCESS_BIZ_UNIQUE_ID));
+            String bizUniqueId = ObjectUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.PROCESS_BIZ_UNIQUE_ID));
             defaultProcessInstance.setBizUniqueId(bizUniqueId);
 
-            String title = ObjUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.PROCESS_TITLE));
+            String title = ObjectUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.PROCESS_TITLE));
             defaultProcessInstance.setTitle(title);
 
-            String comment = ObjUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.PROCESS_INSTANCE_COMMENT));
+            String comment = ObjectUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.PROCESS_INSTANCE_COMMENT));
             defaultProcessInstance.setComment(comment);
         }
 

@@ -1,6 +1,5 @@
 package com.alibaba.smart.framework.engine.extendsion.parser.engine.parser;
 
-import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamReader;
 
 import com.alibaba.smart.framework.engine.bpmn.assembly.process.parser.AbstractBpmnParser;
@@ -40,7 +39,7 @@ public class ProcessFieldParser extends AbstractBpmnParser<ProcessField> {
     }
 
     @Override
-    protected void decorateChild(ProcessField model, BaseElement child) {
+    protected void decorateChild(ProcessField model, BaseElement child, ParseContext context) {
             if (child instanceof StringField) {
                 model.setValue(((StringField)child).getValue());
                 model.setValueType("string");

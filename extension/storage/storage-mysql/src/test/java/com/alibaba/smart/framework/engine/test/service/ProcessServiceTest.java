@@ -11,6 +11,7 @@ import com.alibaba.smart.framework.engine.model.instance.DeploymentInstance;
 import com.alibaba.smart.framework.engine.model.instance.ExecutionInstance;
 import com.alibaba.smart.framework.engine.model.instance.InstanceStatus;
 import com.alibaba.smart.framework.engine.model.instance.ProcessInstance;
+import com.alibaba.smart.framework.engine.model.instance.TaskAssigneeInstance;
 import com.alibaba.smart.framework.engine.model.instance.TaskInstance;
 import com.alibaba.smart.framework.engine.service.param.command.CreateDeploymentCommand;
 import com.alibaba.smart.framework.engine.service.param.query.ProcessInstanceQueryParam;
@@ -195,10 +196,15 @@ public class ProcessServiceTest extends DatabaseBaseTestCase {
         Assert.assertEquals(InstanceStatus.aborted,processInstance.getStatus());
         Assert.assertEquals("abort_reason",processInstance.getReason());
 
-        List<ExecutionInstance> executionInstanceList = executionQueryService.findActiveExecutionList(processInstance.getInstanceId());
+
+        List<ExecutionInstance> executionInstanceList = executionQueryService.findAll(processInstance.getInstanceId());
+        Assert.assertEquals(4,executionInstanceList.size());
+
+        executionInstanceList = executionQueryService.findActiveExecutionList(processInstance.getInstanceId());
         Assert.assertEquals(0,executionInstanceList.size());
         List<TaskInstance> taskInstanceList =   taskQueryService.findAllPendingTaskList(processInstance.getInstanceId());
         Assert.assertEquals(0,taskInstanceList.size());
+
 
 
         TaskInstanceQueryParam taskInstanceQueryParam = new TaskInstanceQueryParam ();
@@ -211,7 +217,6 @@ public class ProcessServiceTest extends DatabaseBaseTestCase {
         TaskInstance taskInstance = taskInstances.get(0);
         Assert.assertEquals(InstanceStatus.aborted.name(), taskInstance.getStatus());
         Assert.assertEquals("abort_tag", taskInstance.getTag());
-
 
     }
 

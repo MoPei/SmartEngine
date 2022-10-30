@@ -12,7 +12,7 @@
 
     <insert id="insert" parameterType="com.alibaba.smart.framework.engine.persister.database.entity.TaskInstanceEntity"   keyProperty="id">
         insert into se_task_instance(<include refid="baseColumn"/>)
-        values (#{id}, now(), now(), #{processInstanceId}, #{processDefinitionIdAndVersion},#{processDefinitionType},
+        values (#{id}, #{gmtCreate}, #{gmtModified}, #{processInstanceId}, #{processDefinitionIdAndVersion},#{processDefinitionType},
         #{activityInstanceId}, #{processDefinitionActivityId},#{executionInstanceId},#{claimUserId},#{priority},#{tag},#{claimTime},#{completeTime},#{status},#{comment},#{extension},#{title})
     </insert>
 
@@ -22,7 +22,7 @@
 
     <sql id="update_sql">
         <set>
-            gmt_modified=now()
+            gmt_modified=now(6)
             <if test="taskInstanceEntity.claimUserId != null">,claim_user_id = #{taskInstanceEntity.claimUserId}</if>
             <if test="taskInstanceEntity.priority != null">,priority = #{taskInstanceEntity.priority}</if>
             <if test="taskInstanceEntity.claimTime != null">,claim_time = #{taskInstanceEntity.claimTime}</if>
@@ -161,6 +161,12 @@
         <if test="processDefinitionType != null">  and  task.process_definition_type = #{processDefinitionType} </if>
         <if test="claimUserId != null">  and  task.claim_user_id = #{claimUserId} </if>
         <if test="tag != null">  and  task.tag = #{tag} </if>
+        <if test="extension != null">  and  task.extension = #{extension} </if>
+
+        <if test="title != null">  and  task.title = #{title} </if>
+        <if test="priority != null">  and  task.priority = #{priority} </if>
+        <if test="comment != null">  and  task.comment = #{comment} </if>
+
         <if test="activityInstanceId != null">  and  task.activity_instance_id = #{activityInstanceId} </if>
         <if test="processDefinitionActivityId != null">  and  task.process_definition_activity_id = #{processDefinitionActivityId} </if>
         <if test="processInstanceIdList != null">

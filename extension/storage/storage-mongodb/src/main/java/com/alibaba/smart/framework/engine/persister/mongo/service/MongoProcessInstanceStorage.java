@@ -16,7 +16,6 @@ import com.alibaba.smart.framework.engine.instance.impl.DefaultProcessInstance;
 import com.alibaba.smart.framework.engine.instance.storage.ProcessInstanceStorage;
 import com.alibaba.smart.framework.engine.model.instance.InstanceStatus;
 import com.alibaba.smart.framework.engine.model.instance.ProcessInstance;
-
 import com.alibaba.smart.framework.engine.persister.mongo.entity.ProcessInstanceEntity;
 import com.alibaba.smart.framework.engine.service.param.query.ProcessInstanceQueryParam;
 
@@ -197,11 +196,11 @@ public class MongoProcessInstanceStorage  implements ProcessInstanceStorage {
         }
 
         if(null != processInstanceQueryParam.getPageOffset()){
-            Pageable pageableRequest = new PageRequest(processInstanceQueryParam.getPageOffset(),processInstanceQueryParam.getPageSize());
+            Pageable pageableRequest =   PageRequest.of(processInstanceQueryParam.getPageOffset(),processInstanceQueryParam.getPageSize());
             query.with(pageableRequest);
         }
 
-        query.with( new Sort(Sort.Direction.ASC, GMT_CREATE));
+        query.with( Sort.by(Sort.Direction.ASC, GMT_CREATE));
         return query;
     }
 

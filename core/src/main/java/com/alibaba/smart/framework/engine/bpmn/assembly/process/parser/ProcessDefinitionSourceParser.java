@@ -1,6 +1,5 @@
 package com.alibaba.smart.framework.engine.bpmn.assembly.process.parser;
 
-import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamReader;
 
 import com.alibaba.smart.framework.engine.bpmn.assembly.process.ProcessDefinitionSourceImpl;
@@ -35,7 +34,7 @@ public class ProcessDefinitionSourceParser extends AbstractElementParser<Process
     }
 
     @Override
-    protected void decorateChild(ProcessDefinitionSourceImpl processDefinitionSource, BaseElement child) {
+    protected void decorateChild(ProcessDefinitionSourceImpl processDefinitionSource, BaseElement child, ParseContext context) {
         if (child instanceof ProcessDefinition) {
             processDefinitionSource.getProcessDefinitionList().add((ProcessDefinition) child);
         }else{

@@ -9,7 +9,6 @@ import com.alibaba.smart.framework.engine.instance.factory.ExecutionInstanceFact
 import com.alibaba.smart.framework.engine.instance.impl.DefaultExecutionInstance;
 import com.alibaba.smart.framework.engine.model.instance.ActivityInstance;
 import com.alibaba.smart.framework.engine.model.instance.ExecutionInstance;
-import com.alibaba.smart.framework.engine.model.instance.InstanceStatus;
 
 /**
  * 默认执行实例工厂实现 Created by ettear on 16-4-20.
@@ -23,7 +22,7 @@ public class DefaultExecutionInstanceFactory implements ExecutionInstanceFactory
     public ExecutionInstance create(ActivityInstance activityInstance,ExecutionContext executionContext) {
         DefaultExecutionInstance defaultExecutionInstance = new DefaultExecutionInstance();
         IdGenerator idGenerator = executionContext.getProcessEngineConfiguration().getIdGenerator();
-        defaultExecutionInstance.setInstanceId(idGenerator.getId());
+        idGenerator.generate(defaultExecutionInstance);
         defaultExecutionInstance.setProcessDefinitionActivityId(activityInstance.getProcessDefinitionActivityId());
         defaultExecutionInstance.setActivityInstanceId(activityInstance.getInstanceId());
         defaultExecutionInstance.setProcessInstanceId(activityInstance.getProcessInstanceId());

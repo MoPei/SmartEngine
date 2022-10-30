@@ -1,6 +1,5 @@
 package com.alibaba.smart.framework.engine.bpmn.assembly.extension.parser;
 
-import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamReader;
 
 import com.alibaba.smart.framework.engine.bpmn.assembly.extension.ExtensionElementsImpl;
@@ -29,9 +28,9 @@ public class ExtensionElementsParser extends AbstractElementParser<ExtensionElem
     }
 
     @Override
-    protected void decorateChild(ExtensionElementsImpl extensionElements, BaseElement child) {
+    protected void decorateChild(ExtensionElementsImpl extensionElements, BaseElement child, ParseContext context) {
         if (child instanceof ExtensionDecorator) {
-            extensionElements.decorate((ExtensionDecorator) child);
+            extensionElements.decorate((ExtensionDecorator) child, context);
         } else {
             throw  new EngineException("Should be a instance of ExtensionDecorator :"+child.getClass());
         }

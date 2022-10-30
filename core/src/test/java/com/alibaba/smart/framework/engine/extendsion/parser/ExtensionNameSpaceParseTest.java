@@ -1,5 +1,8 @@
 package com.alibaba.smart.framework.engine.extendsion.parser;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.alibaba.smart.framework.engine.SmartEngine;
 import com.alibaba.smart.framework.engine.bpmn.assembly.task.ServiceTask;
 import com.alibaba.smart.framework.engine.configuration.ProcessEngineConfiguration;
@@ -16,12 +19,11 @@ import com.alibaba.smart.framework.engine.service.command.ProcessCommandService;
 import com.alibaba.smart.framework.engine.service.command.RepositoryCommandService;
 import com.alibaba.smart.framework.engine.service.query.ExecutionQueryService;
 import com.alibaba.smart.framework.engine.smart.PropertyCompositeKey;
+import com.alibaba.smart.framework.engine.smart.PropertyCompositeValue;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author zilong.jiangzl
@@ -84,12 +86,12 @@ public class ExtensionNameSpaceParseTest {
                 Map<PropertyCompositeKey, String> extensionMap =
                         (Map<PropertyCompositeKey, String>)serviceTask.getExtensionElements().getDecorationMap().get(ExtensionElementsConstant.PROPERTIES);
                 Assert.assertTrue(extensionMap.size() == 1);
-                final Map<String, String> properties = new HashMap<String, String>();
+                final Map<String, Object> properties = new HashMap<String, Object>();
                 for(Map.Entry<PropertyCompositeKey, String> e :  extensionMap.entrySet()) {
                     properties.put(e.getKey().getName(), e.getValue());
                 }
-                String taskOption = properties.get("taskOption");
-                Assert.assertEquals(taskOption, "100");
+                PropertyCompositeValue taskOption = (PropertyCompositeValue)properties.get("taskOption");
+                Assert.assertEquals(taskOption.getAttrMap().get("value"), "100");
             }
         }
     }

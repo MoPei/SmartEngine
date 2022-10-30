@@ -2,9 +2,11 @@ package com.alibaba.smart.framework.engine.persister.database.service;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import com.alibaba.smart.framework.engine.common.util.CollectionUtil;
+import com.alibaba.smart.framework.engine.common.util.DateUtil;
 import com.alibaba.smart.framework.engine.configuration.ProcessEngineConfiguration;
 import com.alibaba.smart.framework.engine.exception.EngineException;
 import com.alibaba.smart.framework.engine.extension.annoation.ExtensionBinding;
@@ -12,7 +14,6 @@ import com.alibaba.smart.framework.engine.extension.constant.ExtensionConstant;
 import com.alibaba.smart.framework.engine.instance.impl.DefaultActivityInstance;
 import com.alibaba.smart.framework.engine.instance.storage.ActivityInstanceStorage;
 import com.alibaba.smart.framework.engine.model.instance.ActivityInstance;
-
 import com.alibaba.smart.framework.engine.persister.database.dao.ActivityInstanceDAO;
 import com.alibaba.smart.framework.engine.persister.database.entity.ActivityInstanceEntity;
 
@@ -57,6 +58,11 @@ public class RelationshipDatabaseActivityInstanceStorage implements ActivityInst
         activityInstanceEntityToBePersisted.setProcessDefinitionActivityId(activityInstance.getProcessDefinitionActivityId());
         activityInstanceEntityToBePersisted.setProcessInstanceId(Long.valueOf(activityInstance.getProcessInstanceId()));
         activityInstanceEntityToBePersisted.setId(Long.valueOf(activityInstance.getInstanceId()));
+
+        Date currentDate = DateUtil.getCurrentDate();
+        activityInstanceEntityToBePersisted.setGmtCreate(currentDate);
+        activityInstanceEntityToBePersisted.setGmtModified(currentDate);
+
         return activityInstanceEntityToBePersisted;
     }
 
@@ -72,10 +78,16 @@ public class RelationshipDatabaseActivityInstanceStorage implements ActivityInst
                                  ProcessEngineConfiguration processEngineConfiguration) {
         ActivityInstanceDAO activityInstanceDAO= (ActivityInstanceDAO)processEngineConfiguration.getInstanceAccessor().access("activityInstanceDAO");
         ActivityInstanceEntity activityInstanceEntity =  activityInstanceDAO.findOne(Long.valueOf(instanceId));
+        if (activityInstanceEntity == null){
+            return null;
+        }
+        return buildActivityInstanceFromEntity(activityInstanceEntity);
+    }
 
-        ActivityInstance activityInstance = buildActivityInstanceFromEntity(activityInstanceEntity);
-
-        return activityInstance;
+    @Override
+    public ActivityInstance findWithShading(String processInstanceId, String activityInstanceId,
+            ProcessEngineConfiguration processEngineConfiguration) {
+        throw new EngineException(NOT_IMPLEMENT_INTENTIONALLY);
     }
 
     private ActivityInstance buildActivityInstanceFromEntity(ActivityInstanceEntity activityInstanceEntity) {

@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.alibaba.smart.framework.engine.common.util.MarkDoneUtil;
-import com.alibaba.smart.framework.engine.configuration.LockStrategy;
 import com.alibaba.smart.framework.engine.configuration.ProcessEngineConfiguration;
 import com.alibaba.smart.framework.engine.configuration.aware.ProcessEngineConfigurationAware;
 import com.alibaba.smart.framework.engine.configuration.scanner.AnnotationScanner;
@@ -32,7 +31,7 @@ import com.alibaba.smart.framework.engine.pvm.impl.DefaultPvmProcessInstance;
 import com.alibaba.smart.framework.engine.service.command.ProcessCommandService;
 import com.alibaba.smart.framework.engine.service.param.query.TaskInstanceQueryParam;
 import com.alibaba.smart.framework.engine.service.query.DeploymentQueryService;
-import com.alibaba.smart.framework.engine.util.ObjUtil;
+import com.alibaba.smart.framework.engine.util.ObjectUtil;
 
 /**
  * @author 高海军 帝奇  2016.11.11
@@ -89,19 +88,16 @@ public class DefaultProcessCommandService implements ProcessCommandService, Life
         PvmProcessInstance pvmProcessInstance = new DefaultPvmProcessInstance();
 
         try {
-            //!!! 重要
-            CommonServiceHelper.tryInsertProcessInstanceIfNeedLock(processEngineConfiguration, processInstance);
+            CommonServiceHelper.tryLock(processEngineConfiguration, processInstance);
 
             processInstance = pvmProcessInstance.start(executionContext);
 
             processInstance = CommonServiceHelper.insertAndPersist(processInstance, request, processEngineConfiguration);
 
             return processInstance;
+
         } finally {
-            LockStrategy lockStrategy = processEngineConfiguration.getLockStrategy();
-            if (null != lockStrategy) {
-                lockStrategy.unLock(processInstance.getInstanceId());
-            }
+            CommonServiceHelper.tryUnlock(processEngineConfiguration, processInstance);
         }
     }
 
@@ -165,7 +161,7 @@ public class DefaultProcessCommandService implements ProcessCommandService, Life
         processInstance.setStatus(InstanceStatus.aborted);
         String  reason = null;
         if (null != request){
-            reason =   ObjUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.PROCESS_INSTANCE_ABORT_REASON)) ;
+            reason =   ObjectUtil.obj2Str(request.get(RequestMapSpecialKeyConstant.PROCESS_INSTANCE_ABORT_REASON)) ;
         }
 
         processInstance.setReason(reason);

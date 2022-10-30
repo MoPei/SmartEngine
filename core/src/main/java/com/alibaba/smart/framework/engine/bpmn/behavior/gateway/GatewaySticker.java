@@ -5,6 +5,7 @@
 package com.alibaba.smart.framework.engine.bpmn.behavior.gateway;
 
 import java.util.Stack;
+
 import com.alibaba.smart.framework.engine.pvm.PvmActivity;
 
 import lombok.Getter;
@@ -15,9 +16,9 @@ public class GatewaySticker {
 
     private static InheritableThreadLocal<Stack<GatewaySticker>> sessionThreadLocal = new InheritableThreadLocal<Stack<GatewaySticker>>();
 
-    @Getter
-    @Setter
-    private  volatile PvmActivity pvmActivity;
+//    @Getter
+//    @Setter
+//    private  volatile PvmActivity pvmActivity;
 
 
     public static GatewaySticker create() {

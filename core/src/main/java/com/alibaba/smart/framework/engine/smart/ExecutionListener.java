@@ -1,19 +1,17 @@
 package com.alibaba.smart.framework.engine.smart;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.namespace.QName;
-
-import com.alibaba.smart.framework.engine.bpmn.constant.BpmnNameSpaceConstant;
 import com.alibaba.smart.framework.engine.common.util.CollectionUtil;
 import com.alibaba.smart.framework.engine.constant.ExtensionElementsConstant;
-import com.alibaba.smart.framework.engine.constant.SmartBase;
 import com.alibaba.smart.framework.engine.listener.ListenerAggregation;
 import com.alibaba.smart.framework.engine.model.assembly.ExtensionDecorator;
 import com.alibaba.smart.framework.engine.model.assembly.ExtensionElements;
 
+import com.alibaba.smart.framework.engine.model.assembly.ProcessDefinitionSource;
+import com.alibaba.smart.framework.engine.pvm.event.EventConstant;
+import com.alibaba.smart.framework.engine.xml.parser.ParseContext;
 import lombok.Data;
 
 /**
@@ -35,7 +33,7 @@ public class ExecutionListener  implements ExtensionDecorator,CustomExtensionEle
     }
 
     @Override
-    public void decorate(ExtensionElements extensionElements) {
+    public void decorate(ExtensionElements extensionElements, ParseContext context) {
         ListenerAggregation eventListenerAggregation =  (ListenerAggregation)extensionElements.getDecorationMap().get(
             getDecoratorType());
 
@@ -47,10 +45,22 @@ public class ExecutionListener  implements ExtensionDecorator,CustomExtensionEle
         for (String event : events) {
 
             // 兼容主流
-            if("start".equals(event)){
-                event = "ACTIVITY_START";
-            }else if ("end".equals(event)){
-                event = "ACTIVITY_END";
+            if( EventConstant.start.name().equals(event)){
+                if(context.getParent().getCurrentElement() instanceof ProcessDefinitionSource){
+
+                    event = EventConstant.PROCESS_START.name();
+                }else {
+                    event = EventConstant.ACTIVITY_START.name();
+                }
+
+            }else if (EventConstant.end.name().equals(event)){
+
+                if(context.getParent().getCurrentElement() instanceof ProcessDefinitionSource){
+                    event = EventConstant.PROCESS_END.name();
+                }else {
+                    event = EventConstant.ACTIVITY_END.name();
+                }
+
             }
 
 

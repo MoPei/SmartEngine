@@ -1,10 +1,8 @@
 package com.alibaba.smart.framework.engine.persister.database.service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import com.alibaba.smart.framework.engine.common.util.DateUtil;
 import com.alibaba.smart.framework.engine.configuration.ProcessEngineConfiguration;
 import com.alibaba.smart.framework.engine.exception.EngineException;
 import com.alibaba.smart.framework.engine.extension.annoation.ExtensionBinding;
@@ -12,7 +10,6 @@ import com.alibaba.smart.framework.engine.extension.constant.ExtensionConstant;
 import com.alibaba.smart.framework.engine.instance.impl.DefaultTaskAssigneeInstance;
 import com.alibaba.smart.framework.engine.instance.storage.TaskAssigneeStorage;
 import com.alibaba.smart.framework.engine.model.instance.TaskAssigneeInstance;
-
 import com.alibaba.smart.framework.engine.persister.database.dao.TaskAssigneeDAO;
 import com.alibaba.smart.framework.engine.persister.database.entity.TaskAssigneeEntity;
 import com.alibaba.smart.framework.engine.service.param.query.PendingTaskQueryParam;
@@ -47,7 +44,7 @@ public class RelationshipDatabaseTaskAssigneeInstanceStorage implements TaskAssi
         TaskAssigneeDAO taskAssigneeDAO= (TaskAssigneeDAO) processEngineConfiguration.getInstanceAccessor().access("taskAssigneeDAO");
 
         Map<String, List<TaskAssigneeInstance>> assigneeMap = null;
-        if (taskInstanceIdList != null) {
+        if (taskInstanceIdList != null && taskInstanceIdList.size() > 0) {
 
             assigneeMap = new HashMap<String, List<TaskAssigneeInstance>>();
 
@@ -61,7 +58,7 @@ public class RelationshipDatabaseTaskAssigneeInstanceStorage implements TaskAssi
 
             for (TaskAssigneeEntity entity: taskAssigneeEntityList) {
                 TaskAssigneeInstance taskAssigneeInstance = buildTaskAssigneeInstance(entity);
-                List<TaskAssigneeInstance> assigneeListForTaskInstance = assigneeMap.get(entity.getTaskInstanceId());
+                List<TaskAssigneeInstance> assigneeListForTaskInstance = assigneeMap.get(entity.getTaskInstanceId().toString());
                 if (assigneeListForTaskInstance == null) {
                     assigneeListForTaskInstance = new ArrayList<TaskAssigneeInstance>();
                     assigneeMap.put(entity.getTaskInstanceId().toString(), assigneeListForTaskInstance);
@@ -114,6 +111,12 @@ public class RelationshipDatabaseTaskAssigneeInstanceStorage implements TaskAssi
         if(null != taskAssigneeInstanceId){
             taskAssigneeEntity.setId(Long.valueOf(taskAssigneeInstanceId));
         }
+
+        Date currentDate = DateUtil.getCurrentDate();
+        taskAssigneeEntity.setGmtCreate(currentDate);
+        taskAssigneeEntity.setGmtModified(currentDate);
+
+
         return taskAssigneeEntity;
     }
 
@@ -133,10 +136,10 @@ public class RelationshipDatabaseTaskAssigneeInstanceStorage implements TaskAssi
 
         TaskAssigneeDAO taskAssigneeDAO= (TaskAssigneeDAO) processEngineConfiguration.getInstanceAccessor().access("taskAssigneeDAO");
         TaskAssigneeEntity taskAssigneeEntity =  taskAssigneeDAO.findOne(Long.valueOf(taskAssigneeInstanceId));
-
-        TaskAssigneeInstance taskAssigneeInstance = buildTaskAssigneeInstance(taskAssigneeEntity);
-
-        return taskAssigneeInstance;
+        if (taskAssigneeEntity == null){
+            return null;
+        }
+        return buildTaskAssigneeInstance(taskAssigneeEntity);
     }
 
     private TaskAssigneeInstance buildTaskAssigneeInstance(TaskAssigneeEntity taskAssigneeEntity) {

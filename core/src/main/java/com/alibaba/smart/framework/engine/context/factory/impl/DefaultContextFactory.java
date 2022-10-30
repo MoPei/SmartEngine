@@ -11,6 +11,7 @@ import com.alibaba.smart.framework.engine.deployment.ProcessDefinitionContainer;
 import com.alibaba.smart.framework.engine.exception.EngineException;
 import com.alibaba.smart.framework.engine.extension.annoation.ExtensionBinding;
 import com.alibaba.smart.framework.engine.extension.constant.ExtensionConstant;
+import com.alibaba.smart.framework.engine.model.assembly.IdBasedElement;
 import com.alibaba.smart.framework.engine.model.assembly.ProcessDefinition;
 import com.alibaba.smart.framework.engine.model.instance.ActivityInstance;
 import com.alibaba.smart.framework.engine.model.instance.ExecutionInstance;
@@ -36,6 +37,17 @@ public class DefaultContextFactory implements ContextFactory {
         executionContext.setProcessDefinition(processDefinition);
         executionContext.setProcessInstance(processInstance);
         executionContext.setExecutionInstance(executionInstance);
+
+        if(null != executionInstance){
+
+            String processDefinitionActivityId = executionInstance.getProcessDefinitionActivityId();
+            Map<String, IdBasedElement> idBasedElementMap = processDefinition.getIdBasedElementMap();
+            IdBasedElement idBasedElement = idBasedElementMap.get(
+                processDefinitionActivityId);
+            executionContext.setBaseElement(idBasedElement);
+
+        }
+
         executionContext.setActivityInstance(activityInstance);
         executionContext.setRequest(request);
         return executionContext;
@@ -54,6 +66,7 @@ public class DefaultContextFactory implements ContextFactory {
         return subContext;
     }
 
+    @Override
     public ExecutionContext create(ProcessEngineConfiguration processEngineConfiguration,
                                    ProcessInstance processInstance, Map<String, Object> request,
                                    Map<String, Object> response, ExecutionContext mayBeNullParentContext) {
@@ -77,15 +90,18 @@ public class DefaultContextFactory implements ContextFactory {
 
 
         subContext.setProcessDefinition(processDefinition);
-
         subContext.setProcessEngineConfiguration(processEngineConfiguration);
-
         subContext.setRequest(request);
         subContext.setResponse(response);
-
         subContext.setProcessInstance(processInstance);
-
         subContext.setParent(mayBeNullParentContext);
+
+        if(null !=  mayBeNullParentContext){
+            subContext.setExecutionInstance(mayBeNullParentContext.getExecutionInstance());
+            subContext.setBaseElement(mayBeNullParentContext.getBaseElement());
+            subContext.setActivityInstance(mayBeNullParentContext.getActivityInstance());
+        }
+
 
         return subContext;
     }

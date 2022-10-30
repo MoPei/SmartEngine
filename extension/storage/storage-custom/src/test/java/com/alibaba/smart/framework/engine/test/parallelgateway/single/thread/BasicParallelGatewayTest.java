@@ -1,4 +1,4 @@
-package com.alibaba.smart.framework.engine.test.parallelgateway;
+package com.alibaba.smart.framework.engine.test.parallelgateway.single.thread;
 
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +17,7 @@ import com.alibaba.smart.framework.engine.test.cases.CustomBaseTestCase;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.jupiter.api.RepeatedTest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -25,7 +26,7 @@ public class BasicParallelGatewayTest extends CustomBaseTestCase {
     private long orderId = 123456L;
 
 
-    protected void initProcessConfiguation() {
+    protected void initProcessConfiguration() {
         processEngineConfiguration = new DefaultProcessEngineConfiguration();
         LockStrategy doNothingLockStrategy = new DoNothingLockStrategy();
         processEngineConfiguration.setLockStrategy(doNothingLockStrategy);
@@ -33,6 +34,7 @@ public class BasicParallelGatewayTest extends CustomBaseTestCase {
 
     @Test
     public void testServiceTaskParallelGateway() throws Exception {
+        super.setUp();
 
         ProcessDefinition processDefinition = repositoryCommandService
             .deploy("test-servicetask-parallel-gateway.bpmn20.xml").getFirstProcessDefinition();

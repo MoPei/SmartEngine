@@ -9,13 +9,16 @@ import com.alibaba.smart.framework.engine.constant.ExtensionElementsConstant;
 import com.alibaba.smart.framework.engine.model.assembly.ExtensionDecorator;
 import com.alibaba.smart.framework.engine.model.assembly.ExtensionElements;
 
+import com.alibaba.smart.framework.engine.xml.parser.ParseContext;
 import lombok.Data;
 
 /**
  * @author zilong.jiangzl
  * @create 2020-07-16 9:42 下午
+ * please use @com.alibaba.smart.framework.engine.smart.Property, Example: com.alibaba.smart.framework.engine.test.cases.extensions.CompositePropertiesTest
  */
 @Data
+@Deprecated
 public class ProcessField implements ExtensionDecorator {
     static String PROCESS_NS ="http://test.com/process";
 
@@ -33,7 +36,7 @@ public class ProcessField implements ExtensionDecorator {
     }
 
     @Override
-    public void decorate(ExtensionElements extensionElements) {
+    public void decorate(ExtensionElements extensionElements, ParseContext context) {
         Map map = (Map)extensionElements.getDecorationMap().get(getDecoratorType());
 
         if (null == map) {

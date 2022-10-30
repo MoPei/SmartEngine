@@ -16,6 +16,8 @@
             <if test="processDefinitionType != null">and process_definition_type = #{processDefinitionType}</if>
             <if test="processDefinitionCode != null">and process_definition_code = #{processDefinitionCode}</if>
             <if test="processDefinitionName != null">and process_definition_name = #{processDefinitionName}</if>
+            <if test="processDefinitionNameLike != null">and process_definition_name like CONCAT('%', #{processDefinitionNameLike},'%')</if>
+            <if test="processDefinitionDescLike != null">and process_definition_desc like CONCAT('%', #{processDefinitionDescLike},'%')</if>
             <if test="deploymentUserId != null">and deployment_user_id = #{deploymentUserId}</if>
             <if test="deploymentStatus != null">and deployment_status = #{deploymentStatus}</if>
             <if test="logicStatus != null">and logic_status = #{logicStatus}</if>
@@ -25,7 +27,7 @@
 
     <insert id="insert" parameterType="com.alibaba.smart.framework.engine.persister.database.entity.DeploymentInstanceEntity"  keyProperty="id">
         insert into  se_deployment_instance(<include refid="baseColumn"/>)
-        values (#{id}, now(), now(), #{processDefinitionId}, #{processDefinitionVersion},#{processDefinitionType},#{processDefinitionCode},
+        values (#{id}, #{gmtCreate}, #{gmtModified}, #{processDefinitionId}, #{processDefinitionVersion},#{processDefinitionType},#{processDefinitionCode},
         #{processDefinitionName},#{processDefinitionDesc},#{processDefinitionContent},
         #{deploymentUserId},#{deploymentStatus} , #{logicStatus})
     </insert>
@@ -36,7 +38,7 @@
 
     <update id="update"  parameterType="com.alibaba.smart.framework.engine.persister.database.entity.DeploymentInstanceEntity">
         update se_deployment_instance set
-        gmt_modified = now()
+        gmt_modified = now(6)
         <if test="processDefinitionId != null"> ,process_definition_id = #{processDefinitionId}</if>
         <if test="processDefinitionVersion != null"> ,process_definition_version = #{processDefinitionVersion}</if>
         <if test="processDefinitionType != null"> ,process_definition_type = #{processDefinitionType}</if>

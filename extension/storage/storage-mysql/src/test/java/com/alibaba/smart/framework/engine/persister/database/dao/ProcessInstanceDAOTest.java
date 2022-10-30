@@ -1,21 +1,23 @@
 package com.alibaba.smart.framework.engine.persister.database.dao;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
-import javax.annotation.Resource;
-
+import com.alibaba.smart.framework.engine.common.util.DateUtil;
 import com.alibaba.smart.framework.engine.persister.database.entity.ProcessInstanceEntity;
 import com.alibaba.smart.framework.engine.service.param.query.ProcessInstanceQueryParam;
 
+import lombok.Setter;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class ProcessInstanceDAOTest extends BaseElementTest {
 
-    @Resource
+    @Setter(onMethod=@__({@Autowired}))
     ProcessInstanceDAO dao;
 
     ProcessInstanceEntity entity = null;
@@ -27,6 +29,9 @@ public class ProcessInstanceDAOTest extends BaseElementTest {
         entity.setStatus("running");
         Long id = System.currentTimeMillis();
         entity.setId(1L);
+        entity.setGmtCreate(DateUtil.getCurrentDate());
+        entity.setGmtModified(DateUtil.getCurrentDate());
+
         entity.setBizUniqueId(String.valueOf(id * 1000 + new Random().nextInt(1000)) );
         entity.setTitle("title");
         entity.setStartUserId("234");
@@ -62,6 +67,29 @@ public class ProcessInstanceDAOTest extends BaseElementTest {
         processInstanceIdList.add(entity.getId().toString());
 
         processInstanceQueryParam.setProcessInstanceIdList(processInstanceIdList);
+        List<ProcessInstanceEntity> result = dao.find(processInstanceQueryParam);
+        Assert.assertEquals("title",result.get(0).getTitle());
+        Assert.assertEquals("tag",result.get(0).getTag());
+        Assert.assertNotNull(result);
+    }
+
+    @Test
+    public void testFindByProcessEndTime() {
+        dao.insert(entity);
+        ProcessInstanceQueryParam processInstanceQueryParam = new ProcessInstanceQueryParam();
+        processInstanceQueryParam.setProcessEndTime(new Date(System.currentTimeMillis() + (365 * 24 * 3600 * 1000)));
+        List<ProcessInstanceEntity> result = dao.find(processInstanceQueryParam);
+        Assert.assertEquals("title",result.get(0).getTitle());
+        Assert.assertEquals("tag",result.get(0).getTag());
+        Assert.assertNotNull(result);
+    }
+
+    @Test
+    public void testFindByProcessStartTimeAndEndTime() {
+        dao.insert(entity);
+        ProcessInstanceQueryParam processInstanceQueryParam = new ProcessInstanceQueryParam();
+        processInstanceQueryParam.setProcessStartTime(new Date(System.currentTimeMillis() - (365 * 24 * 3600 * 1000L)));
+        processInstanceQueryParam.setProcessEndTime(new Date(System.currentTimeMillis() + (30 * 24 * 3600 * 1000L)));
         List<ProcessInstanceEntity> result = dao.find(processInstanceQueryParam);
         Assert.assertEquals("title",result.get(0).getTitle());
         Assert.assertEquals("tag",result.get(0).getTag());

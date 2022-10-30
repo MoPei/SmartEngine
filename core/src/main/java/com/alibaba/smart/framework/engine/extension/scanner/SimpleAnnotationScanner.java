@@ -10,7 +10,6 @@ import java.net.URLDecoder;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.jar.JarEntry;
@@ -46,23 +45,23 @@ public class SimpleAnnotationScanner implements AnnotationScanner {
 
     protected static Set<Class<?>> scan(String... packageNames) throws IOException {
 
-        Set<Class<?>> classes = new LinkedHashSet();
+        Set<Class<?>> clazzSet = new LinkedHashSet();
 
         for (String packageName : packageNames) {
 
             String formattedPackageDirName = packageName.replace('.', '/');
 
-            Enumeration<URL> dirs = ClassUtil.getContextClassLoader().getResources(formattedPackageDirName);
+            Enumeration<URL> allMatchedURLs = ClassUtil.getContextClassLoader().getResources(formattedPackageDirName);
 
-            while (dirs.hasMoreElements()) {
+            while (allMatchedURLs.hasMoreElements()) {
 
-                URL url = dirs.nextElement();
+                URL url = allMatchedURLs.nextElement();
                 String protocol = url.getProtocol();
 
                 if (FILE.equals(protocol)) {
                     String filePath = URLDecoder.decode(url.getFile(), UTF_8);
 
-                    scanFiles(packageName, filePath, true, classes);
+                    scanFiles(packageName, filePath, true, clazzSet);
 
                 } else if (JAR.equals(protocol)) {
 
@@ -80,14 +79,14 @@ public class SimpleAnnotationScanner implements AnnotationScanner {
 
                             if (idx != -1) {
 
-                                packageName = entryName.substring(0, idx).replace('/', '.');
+                                String    finalPackageName = entryName.substring(0, idx).replace('/', '.');
 
                                 if (entryName.endsWith(".class") && !entry.isDirectory()) {
 
-                                    String className = entryName.substring(packageName.length() + 1,
+                                    String className = entryName.substring(finalPackageName.length() + 1,
                                         entryName.length() - 6);
 
-                                    classes.add(ClassUtil.loadClass(packageName + '.' + className));
+                                    clazzSet.add(ClassUtil.loadClass(finalPackageName + '.' + className));
 
                                 }
                             }
@@ -103,7 +102,7 @@ public class SimpleAnnotationScanner implements AnnotationScanner {
 
 
 
-        return classes;
+        return clazzSet;
     }
 
     private static void scanFiles(String packageName, String packagePath,
@@ -137,10 +136,12 @@ public class SimpleAnnotationScanner implements AnnotationScanner {
         }
     }
 
+    @Override
     public void clear() {
         scanResult.clear();
     }
 
+    @Override
     public void scan(
         ProcessEngineConfiguration processEngineConfiguration, Class<? extends Annotation> targetAnnotationType) {
 
@@ -225,7 +226,7 @@ public class SimpleAnnotationScanner implements AnnotationScanner {
         ExtensionBinding exBindingAnnotation = (ExtensionBinding)objectInBindingMap.getClass().getAnnotation(targetAnnotationType);
 
         if(currentBindingAnnotation.priority() < exBindingAnnotation.priority()){
-            LOGGER.warn("Because of lower priority, current extension  {} is ignored, still using the extension {} " ,targetClass,objectInBindingMap.getClass());
+            LOGGER.warn("Because of lower priority, current extension  {} is ignored, now using the new extension {} " ,targetClass,objectInBindingMap.getClass());
         }
 
        else if(currentBindingAnnotation.priority() == exBindingAnnotation.priority()){
@@ -246,12 +247,14 @@ public class SimpleAnnotationScanner implements AnnotationScanner {
 
     }
 
+    @Override
     public <T> T getExtensionPoint(String group, Class<T> clazz) {
         ExtensionBindingResult extensionBindingResult = this.scanResult.get(group);
         Map<Class, Object> bindingMap = extensionBindingResult.getBindingMap();
         return (T)bindingMap.get(clazz);
     }
 
+    @Override
     public Object getObject(String group, Class clazz) {
         return this.scanResult.get(group).getBindingMap().get(clazz);
 

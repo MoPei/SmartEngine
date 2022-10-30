@@ -12,6 +12,7 @@ import com.alibaba.smart.framework.engine.extension.constant.ExtensionConstant;
 import com.alibaba.smart.framework.engine.model.instance.InstanceStatus;
 import com.alibaba.smart.framework.engine.model.instance.ProcessInstance;
 import com.alibaba.smart.framework.engine.pvm.PvmActivity;
+import com.alibaba.smart.framework.engine.pvm.event.EventConstant;
 import com.alibaba.smart.framework.engine.service.command.ExecutionCommandService;
 
 @ExtensionBinding(group = ExtensionConstant.ACTIVITY_BEHAVIOR, bindKey = EndEvent.class)
@@ -23,6 +24,8 @@ public class EndEventBehavior extends AbstractActivityBehavior<EndEvent> {
 
     @Override
     public void leave(ExecutionContext context, PvmActivity pvmActivity) {
+        fireEvent(context,pvmActivity, EventConstant.ACTIVITY_END);
+
         ProcessInstance processInstance = context.getProcessInstance();
         processInstance.setStatus(InstanceStatus.completed);
         processInstance.setCompleteTime(DateUtil.getCurrentDate());
@@ -36,8 +39,6 @@ public class EndEventBehavior extends AbstractActivityBehavior<EndEvent> {
             }
         }
 
-
-
         //==== 子流程结束，执行父流程 ====
         //子流程结束时,才会进入到该环节里面来。需要找出父流程的执行实例id,然后继续执行父流程的后续节点。
         String parentExecutionInstanceId = processInstance.getParentExecutionInstanceId();
@@ -48,5 +49,7 @@ public class EndEventBehavior extends AbstractActivityBehavior<EndEvent> {
                 executionCommandService.signal(parentExecutionInstanceId,context.getRequest());
             }
         }
+
+        fireEvent(context, pvmActivity, EventConstant.PROCESS_END);
     }
 }

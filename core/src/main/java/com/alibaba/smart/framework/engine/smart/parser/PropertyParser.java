@@ -1,6 +1,7 @@
 package com.alibaba.smart.framework.engine.smart.parser;
 
-import javax.xml.namespace.QName;
+import java.util.Map;
+
 import javax.xml.stream.XMLStreamReader;
 
 import com.alibaba.smart.framework.engine.extension.annoation.ExtensionBinding;
@@ -9,8 +10,6 @@ import com.alibaba.smart.framework.engine.smart.Property;
 import com.alibaba.smart.framework.engine.xml.parser.AbstractElementParser;
 import com.alibaba.smart.framework.engine.xml.parser.ParseContext;
 import com.alibaba.smart.framework.engine.xml.util.XmlParseUtil;
-
-import java.util.List;
 
 @ExtensionBinding(group = ExtensionConstant.ELEMENT_PARSER, bindKey = Property.class)
 public class PropertyParser extends AbstractElementParser<Property> {
@@ -24,6 +23,10 @@ public class PropertyParser extends AbstractElementParser<Property> {
         property.setType(XmlParseUtil.getString(reader, "type"));
         property.setName(XmlParseUtil.getString(reader, "name"));
         property.setValue(XmlParseUtil.getString(reader, "value"));
+
+        Map<String, String> allAttrs = XmlParseUtil.parseExtendedProperties(reader, context);
+
+        property.setAttrs(allAttrs);
 
         return property;
     }

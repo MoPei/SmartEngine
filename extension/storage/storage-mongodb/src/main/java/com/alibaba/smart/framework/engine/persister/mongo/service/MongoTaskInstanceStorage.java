@@ -16,7 +16,6 @@ import com.alibaba.smart.framework.engine.instance.storage.TaskAssigneeStorage;
 import com.alibaba.smart.framework.engine.instance.storage.TaskInstanceStorage;
 import com.alibaba.smart.framework.engine.model.instance.TaskAssigneeInstance;
 import com.alibaba.smart.framework.engine.model.instance.TaskInstance;
-
 import com.alibaba.smart.framework.engine.persister.mongo.entity.TaskAssigneeEntity;
 import com.alibaba.smart.framework.engine.persister.mongo.entity.TaskInstanceEntity;
 import com.alibaba.smart.framework.engine.service.param.query.PendingTaskQueryParam;
@@ -140,11 +139,11 @@ public class MongoTaskInstanceStorage implements TaskInstanceStorage {
 
 
         if(null != taskInstanceQueryParam.getPageOffset()){
-            Pageable pageableRequest = new PageRequest(taskInstanceQueryParam.getPageOffset(),taskInstanceQueryParam.getPageSize());
+            Pageable pageableRequest =   PageRequest.of(taskInstanceQueryParam.getPageOffset(),taskInstanceQueryParam.getPageSize());
             query.with(pageableRequest);
         }
 
-        query.with( new Sort(Sort.Direction.ASC, GMT_CREATE));
+        query.with(   Sort.by(Sort.Direction.ASC, GMT_CREATE));
         return query;
     }
 

@@ -1,16 +1,17 @@
 package com.alibaba.smart.framework.engine.persister.database.dao;
 
-import javax.annotation.Resource;
-
+import com.alibaba.smart.framework.engine.common.util.DateUtil;
 import com.alibaba.smart.framework.engine.persister.database.entity.ExecutionInstanceEntity;
 
+import lombok.Setter;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class ExecutionInstanceDAOTest extends BaseElementTest {
 
-    @Resource
+    @Setter(onMethod=@__({@Autowired}))
     ExecutionInstanceDAO dao;
 
     ExecutionInstanceEntity entity = null;
@@ -20,6 +21,10 @@ public class ExecutionInstanceDAOTest extends BaseElementTest {
         entity = new ExecutionInstanceEntity();
         long id = System.currentTimeMillis();
         entity.setId(id);
+
+        entity.setGmtCreate(DateUtil.getCurrentDate());
+        entity.setGmtModified(DateUtil.getCurrentDate());
+
         entity.setProcessDefinitionIdAndVersion("processDefinitionId");
         entity.setActivityInstanceId(11L);
         entity.setProcessInstanceId(444L);

@@ -17,11 +17,13 @@ import com.alibaba.smart.framework.engine.instance.factory.ProcessInstanceFactor
 import com.alibaba.smart.framework.engine.instance.factory.TaskInstanceFactory;
 import com.alibaba.smart.framework.engine.instance.storage.ExecutionInstanceStorage;
 import com.alibaba.smart.framework.engine.model.assembly.Activity;
+import com.alibaba.smart.framework.engine.model.assembly.IdBasedElement;
 import com.alibaba.smart.framework.engine.model.instance.ActivityInstance;
 import com.alibaba.smart.framework.engine.model.instance.ExecutionInstance;
 import com.alibaba.smart.framework.engine.model.instance.ProcessInstance;
 import com.alibaba.smart.framework.engine.pvm.PvmActivity;
 import com.alibaba.smart.framework.engine.pvm.PvmTransition;
+import com.alibaba.smart.framework.engine.pvm.event.EventConstant;
 
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -50,7 +52,11 @@ public abstract class AbstractActivityBehavior<T extends Activity> implements Ac
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractActivityBehavior.class);
 
+    protected void fireEvent(ExecutionContext context,PvmActivity pvmActivity, EventConstant event) {
 
+        context.getProcessEngineConfiguration().getListenerExecutor().execute(event,pvmActivity.getModel(),context);
+
+    }
 
     @Override
     public boolean enter(ExecutionContext context, PvmActivity pvmActivity) {
@@ -67,6 +73,11 @@ public abstract class AbstractActivityBehavior<T extends Activity> implements Ac
 
             activityInstance.setExecutionInstanceList(executionInstanceList);
             context.setExecutionInstance(executionInstance);
+
+            IdBasedElement idBasedElement = context.getProcessDefinition().getIdBasedElementMap().get(executionInstance.getProcessDefinitionActivityId());
+            context.setBaseElement(idBasedElement);
+
+            fireEvent(context,pvmActivity, EventConstant.ACTIVITY_START);
 
             return false;
         }
@@ -86,11 +97,29 @@ public abstract class AbstractActivityBehavior<T extends Activity> implements Ac
 
     @Override
     public void execute(ExecutionContext context,PvmActivity pvmActivity) {
+
+        hookExecution(context, pvmActivity);
+        if (context.isNeedPause()) {
+            // break;
+            return;
+        }
+
+        fireEvent(context,pvmActivity, EventConstant.ACTIVITY_EXECUTE);
+
         executeDelegation(context,pvmActivity.getModel());
 
         commonUpdateExecutionInstance(context);
 
     }
+
+    protected void hookExecution(ExecutionContext context,PvmActivity pvmActivity) {
+        // default: do nothing
+
+        // 意图: 用于解决页面上多个按钮,当用户点击了这个按钮,却不触发业务流程的状态的变化,仅仅是改变业务领域对象.
+        // 所以,这里提供了一个扩展机制,允许ClientProgrammer 在仍然使用signal 方法的时候,但是不驱动流程变化. 一般业务忽略此方法即可.
+        // 一般示例: 传入 开启选项参数 和 按钮名称, 然后反射调用对应的类执行业务逻辑
+    }
+
 
     protected void commonUpdateExecutionInstance(ExecutionContext context) {
         if (!context.isNeedPause()) {
@@ -109,6 +138,9 @@ public abstract class AbstractActivityBehavior<T extends Activity> implements Ac
 
     @Override
     public void leave(ExecutionContext context, PvmActivity pvmActivity) {
+        fireEvent(context,pvmActivity, EventConstant.ACTIVITY_END);
+
+
         //执行每个节点的hook方法
         Map<String, PvmTransition> outcomeTransitions = pvmActivity.getOutcomeTransitions();
 
@@ -125,7 +157,7 @@ public abstract class AbstractActivityBehavior<T extends Activity> implements Ac
                 }
             }else {
 
-                 ExclusiveGatewayBehaviorHelper.chooseOnlyOne(context, outcomeTransitions);
+                 ExclusiveGatewayBehaviorHelper.chooseOnlyOne(pvmActivity,context, outcomeTransitions);
 
             }
         }
