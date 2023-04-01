@@ -1,11 +1,10 @@
 package com.alibaba.smart.framework.engine.test.cases;
 
-import com.alibaba.smart.framework.engine.annoation.Retryable;
+import com.alibaba.smart.framework.engine.annotation.Retryable;
 import com.alibaba.smart.framework.engine.configuration.ExceptionProcessor;
 import com.alibaba.smart.framework.engine.configuration.impl.DefaultDelegationExecutor;
 import com.alibaba.smart.framework.engine.context.ExecutionContext;
 import com.alibaba.smart.framework.engine.delegation.JavaDelegation;
-import com.alibaba.smart.framework.engine.exception.EngineException;
 import com.alibaba.smart.framework.engine.model.assembly.ProcessDefinition;
 import com.alibaba.smart.framework.engine.model.instance.InstanceStatus;
 import com.alibaba.smart.framework.engine.model.instance.ProcessInstance;
@@ -64,7 +63,7 @@ public class RetryServiceTaskTest extends CustomBaseTestCase {
 
                 }
 
-                if(attemptCount == maxAttempts ){
+                if(attemptCount > maxAttempts ){
                     // means all retry failed
                     // record log ,trigger alert, persist params if needed
 
