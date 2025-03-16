@@ -5,7 +5,7 @@ import com.alibaba.smart.framework.engine.bpmn.behavior.gateway.ParallelGatewayB
 import com.alibaba.smart.framework.engine.common.util.MapUtil;
 import com.alibaba.smart.framework.engine.common.util.StringUtil;
 import com.alibaba.smart.framework.engine.configuration.ProcessEngineConfiguration;
-import com.alibaba.smart.framework.engine.configuration.impl.PvmActivityTask;
+import com.alibaba.smart.framework.engine.configuration.PvmActivityTask;
 import com.alibaba.smart.framework.engine.constant.ParallelGatewayConstant;
 import com.alibaba.smart.framework.engine.constant.RequestMapSpecialKeyConstant;
 import com.alibaba.smart.framework.engine.context.ExecutionContext;
@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
-public abstract  class ParallelServiceOrchestrationUtil {
+public abstract  class ParallelGatewayUtil {
 
 
     public static Long acquireLatchWaitTime(ExecutionContext context, Map<String, String> properties) {
@@ -46,7 +46,8 @@ public abstract  class ParallelServiceOrchestrationUtil {
         return null != latchWaitTime && latchWaitTime > 0L;
     }
 
-    public static ExecutorService useSpecifiedExecutorServiceIfNeeded(Map<String, String> properties, ProcessEngineConfiguration processEngineConfiguration, ExecutorService executorService) {
+    public static ExecutorService useSpecifiedExecutorServiceIfNeeded(Map<String, String> properties, ProcessEngineConfiguration processEngineConfiguration) {
+        ExecutorService executorService = processEngineConfiguration.getExecutorService();
         Map<String, ExecutorService> poolsMap = processEngineConfiguration.getExecutorServiceMap();
         String poolName;
         if (poolsMap != null && properties != null && (poolName =
@@ -141,10 +142,10 @@ public abstract  class ParallelServiceOrchestrationUtil {
      * @param ignoreTimeout 是否忽略超时异常
      * @return future对象
      */
-    private static Future<PvmActivity> invokeAnyOf(ExecutorService pool, List<PvmActivityTask> tasks, long timeout,
-                                            boolean ignoreTimeout) throws Exception {
+    private static Future<ExecutionContext> invokeAnyOf(ExecutorService pool, List<PvmActivityTask> tasks, long timeout,
+                                                   boolean ignoreTimeout) throws Exception {
 
-        PvmActivity pvmActivity = null;
+        ExecutionContext pvmActivity = null;
         Exception ex = null;
 
         // 不处理超时的情况
@@ -153,7 +154,7 @@ public abstract  class ParallelServiceOrchestrationUtil {
         } else {
             // 处理timeout的方式
             try {
-                pvmActivity = pool.invokeAny(tasks, timeout, TimeUnit.MILLISECONDS);
+                pvmActivity = pool.invokeAny( tasks, timeout, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 throw e;
             } catch (ExecutionException e) {
@@ -166,28 +167,28 @@ public abstract  class ParallelServiceOrchestrationUtil {
             }
         }
 
-        return new CompletedFuture<PvmActivity>(pvmActivity, ex);
+        return new CompletedFuture<ExecutionContext>(pvmActivity, ex);
     }
 
-    public static List<Future<PvmActivity>> invoke(Long latchWaitTime, boolean isSkipTimeout, ParallelGatewayConstant.ExecuteStrategy executeStrategy, ExecutorService executorService, List<PvmActivityTask> pvmActivityTaskList) throws  Exception {
+    public static List<Future<ExecutionContext>> invoke(Long latchWaitTime, boolean isSkipTimeout, ParallelGatewayConstant.ExecuteStrategy executeStrategy, ExecutorService executorService, List<PvmActivityTask> pvmActivityTaskList) throws  Exception {
 
-        List<Future<PvmActivity>> futureExecutionResultList = new ArrayList<Future<PvmActivity>>();
+        List<Future<ExecutionContext>> futureExecutionResultList = new ArrayList<Future<ExecutionContext>>();
 
 
         if (hasValidLatchWaitTime(latchWaitTime)) {
             if (executeStrategy.equals(ParallelGatewayConstant.ExecuteStrategy.INVOKE_ALL)) {
-                futureExecutionResultList = executorService.invokeAll(pvmActivityTaskList, latchWaitTime, TimeUnit.MILLISECONDS);
+                futureExecutionResultList = executorService.invokeAll( pvmActivityTaskList, latchWaitTime, TimeUnit.MILLISECONDS);
             } else {
-                Future<PvmActivity> future = invokeAnyOf(executorService, pvmActivityTaskList, latchWaitTime,
+                Future<ExecutionContext> future = invokeAnyOf(executorService, pvmActivityTaskList, latchWaitTime,
                         isSkipTimeout);
                 futureExecutionResultList.add(future);
             }
         } else {
             // 超时等待时间为空或不大于0，无需wait
             if (executeStrategy.equals(ParallelGatewayConstant.ExecuteStrategy.INVOKE_ALL)) {
-                futureExecutionResultList = executorService.invokeAll(pvmActivityTaskList);
+                futureExecutionResultList = executorService.invokeAll( pvmActivityTaskList);
             } else {
-                Future<PvmActivity> future = invokeAnyOf(executorService, pvmActivityTaskList, 0,
+                Future<ExecutionContext> future = invokeAnyOf(executorService, pvmActivityTaskList, 0,
                         false);
                 futureExecutionResultList.add(future);
             }

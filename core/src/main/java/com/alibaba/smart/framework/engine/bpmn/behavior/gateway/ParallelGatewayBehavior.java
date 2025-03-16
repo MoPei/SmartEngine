@@ -1,21 +1,17 @@
 package com.alibaba.smart.framework.engine.bpmn.behavior.gateway;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.*;
 
 import com.alibaba.smart.framework.engine.behavior.base.AbstractActivityBehavior;
 import com.alibaba.smart.framework.engine.bpmn.assembly.gateway.ParallelGateway;
 import com.alibaba.smart.framework.engine.common.util.InstanceUtil;
+import com.alibaba.smart.framework.engine.common.util.MapUtil;
 import com.alibaba.smart.framework.engine.common.util.MarkDoneUtil;
-import com.alibaba.smart.framework.engine.configuration.ConfigurationOption;
-import com.alibaba.smart.framework.engine.configuration.LockStrategy;
-import com.alibaba.smart.framework.engine.configuration.ParallelServiceOrchestration;
-import com.alibaba.smart.framework.engine.configuration.impl.PvmActivityTask;
+import com.alibaba.smart.framework.engine.configuration.*;
 import com.alibaba.smart.framework.engine.configuration.scanner.AnnotationScanner;
+import com.alibaba.smart.framework.engine.constant.ParallelGatewayConstant;
 import com.alibaba.smart.framework.engine.context.ExecutionContext;
 import com.alibaba.smart.framework.engine.context.factory.ContextFactory;
 import com.alibaba.smart.framework.engine.exception.EngineException;
@@ -29,6 +25,8 @@ import com.alibaba.smart.framework.engine.pvm.event.EventConstant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static com.alibaba.smart.framework.engine.util.ParallelGatewayUtil.*;
 
 @ExtensionBinding(group = ExtensionConstant.ACTIVITY_BEHAVIOR, bindKey = ParallelGateway.class)
 public class ParallelGatewayBehavior extends AbstractActivityBehavior<ParallelGateway> {
@@ -44,7 +42,7 @@ public class ParallelGatewayBehavior extends AbstractActivityBehavior<ParallelGa
     public boolean enter(ExecutionContext context, PvmActivity pvmActivity) {
 
         //算法说明:ParallelGatewayBehavior 同时承担 fork 和 join 职责。所以说,如何判断是 fork 还是 join ?
-        // 目前主要原则就看pvmActivity节点的 incomeTransition 和 outcomeTransition 的比较。
+        // 目前主要就看pvmActivity节点的 incomeTransition 和 outcomeTransition 数量差异。
         // 如果 income 为1,则为 join 节点。
         // 如果 outcome 为 1 ,则为 fork 节点。
         // 重要:在流程定义解析时,需要判断如果是 fork,则 outcome >=2, income=1; 类似的,如果是 join,则 outcome = 1,income>=2
@@ -92,7 +90,11 @@ public class ParallelGatewayBehavior extends AbstractActivityBehavior<ParallelGa
 
         if (outComeTransitionSize >= 2 && inComeTransitionSize == 1) {
             //fork
+            super.enter(context, pvmActivity);
 
+            // TUNE 这里不太优雅,本来应该在execute方法中返回false的,但是execute的返回值是void,大意了. 暂时先不改了,否则很可能影响现有的用户
+            // 此外,目前这个类绕过了execute和leave的执行,后面有机会在优化 (并行网关这个类很特殊,既承担了fork又承担了join职责)
+            context.getExecutionInstance().setActive(false);
             fireEvent(context,pvmActivity, EventConstant.ACTIVITY_START);
 
 
@@ -105,56 +107,65 @@ public class ParallelGatewayBehavior extends AbstractActivityBehavior<ParallelGa
                     target.enter(context);
                 }
             }else{
-                //并发执行fork
+                //并发执行fork  算法说明
+                // 前置: 在流程定义解析阶段需要知道,所有网关是否配对,并且在解析期间进行校验
+                // 当子线程执行结束时,看下该分支是否到达了fork对应的join(考虑到嵌套), 如果所有分支都已经完成(注意事项:检查到达该fork对应的join节点,需要注意嵌套,父join找父fork,子join找子join),
+                // 如果在fork主线程中发现都已经完毕(每个子线程当前的最后一个节点是否为对应的join),则调用join节点的enter ; 否则调用返回,等待下一次外部的signal
+
+                ProcessEngineConfiguration processEngineConfiguration = context.getProcessEngineConfiguration();
                 AnnotationScanner annotationScanner = processEngineConfiguration.getAnnotationScanner();
                 ContextFactory contextFactory = annotationScanner.getExtensionPoint(ExtensionConstant.COMMON, ContextFactory.class);
 
+                Map<String, String> properties = pvmActivity.getModel().getProperties();
+                Set<Entry<String, PvmTransition>> entries = outcomeTransitions.entrySet();
 
-                List<PvmActivityTask> tasks = new ArrayList<PvmActivityTask>(outcomeTransitions.size());
+                Long latchWaitTime = acquireLatchWaitTime(context, properties);
+                ParallelGatewayConstant.ExecuteStrategy executeStrategy = getExecuteStrategy(properties);
+                boolean isSkipTimeout = isSkipTimeout((String) MapUtil.safeGet(properties, ParallelGatewayConstant.SKIP_TIMEOUT_EXCEPTION));
 
-                for (Entry<String, PvmTransition> pvmTransitionEntry : outcomeTransitions.entrySet()) {
-                    PvmActivity target = pvmTransitionEntry.getValue().getTarget();
 
-                    //注意,ExecutionContext 在多线程情况下,必须要新建对象,防止一些变量被并发修改.
-                    ExecutionContext subThreadContext = contextFactory.createChildThreadContext(context);
-                    PvmActivityTask task = new PvmActivityTask(target,subThreadContext);
+                // 注意: 重新赋值 如果能匹配到自定义的线程池，直接使用。 允许扩展并行网关的3种属性: timeout="300" strategy="any" poolName="poolA" skipTimeoutExp="true"  使用方法详见  ServiceOrchestrationParallelGatewayTest
+                executorService = useSpecifiedExecutorServiceIfNeeded(properties, processEngineConfiguration);
 
-                    tasks.add(task);
-                }
-
+                List<PvmActivityTask> pvmActivityTaskList = new ArrayList<PvmActivityTask>(outComeTransitionSize);
 
                 try {
-                    executorService.invokeAll(tasks);
-                } catch (InterruptedException e) {
-                    throw new EngineException(e.getMessage(), e);
+
+                    initTaskList(context, contextFactory, entries, pvmActivityTaskList);
+
+
+                    List<Future<ExecutionContext>> futureExecutionResultList = invoke(latchWaitTime, isSkipTimeout, executeStrategy, executorService, pvmActivityTaskList);
+
+                    List<ExecutionContext> subThreadContextList =  acquireResults(context, processEngineConfiguration, latchWaitTime, futureExecutionResultList);
+
+
+                    //这里目前看起来没啥必要了
+                    for (ExecutionContext executionContext : subThreadContextList) {
+                        executionContext.getExecutionInstance().getProcessDefinitionActivityId();
+                    }
+
+
+                } catch (Exception e) {
+                    throw new EngineException(e);
                 }
+
+
 
             }
 
         } else if (outComeTransitionSize == 1 && inComeTransitionSize >= 2) {
-            //join 时必须使用分布式锁。
-            // update at 2022.10.31 这里的缩粒度不够大,在极端环境下,还是存在数据可见性的问题.
-            // 比如说,当这个锁结束后, 外面还需要进行持久化数据. 理论上,另外一个线程进来执行时,可能这个持久化数据还未完成.
-            // 所以这里取消掉锁,改为外部锁
 
-            LockStrategy lockStrategy = context.getProcessEngineConfiguration().getLockStrategy();
-            if(null == lockStrategy){
-                throw new EngineException("LockStrategy must be implemented for ParallelGateway");
-            }
+            ProcessInstance processInstance = context.getProcessInstance();
 
-//            String processInstanceId = context.getProcessInstance().getInstanceId();
-//            try{
-//                lockStrategy.tryLock(processInstanceId,context);
+            //这个同步很关键,避免多线程同时进入临界区,然后在下面的逻辑里去创建新的 join ei,然后和countOfTheJoinLatch 进行比较
+            synchronized (processInstance){
 
                 super.enter(context, pvmActivity);
 
                 Collection<PvmTransition> inComingPvmTransitions = incomeTransitions.values();
 
-                ProcessInstance processInstance = context.getProcessInstance();
-
                 //当前内存中的，新产生的 active ExecutionInstance
                 List<ExecutionInstance> executionInstanceListFromMemory = InstanceUtil.findActiveExecution(processInstance);
-
 
                 //当前持久化介质中中，已产生的 active ExecutionInstance。
                 List<ExecutionInstance> executionInstanceListFromDB =  executionInstanceStorage.findActiveExecution(processInstance.getInstanceId(), super.processEngineConfiguration);
@@ -163,7 +174,7 @@ public class ParallelGatewayBehavior extends AbstractActivityBehavior<ParallelGa
 
 
 
-                //Merge 数据库中和内存中的EI。如果是 custom模式，则可能会存在重复记录，所以这里需要去重。 如果是 DataBase 模式，则不会有重复的EI.
+                //Merge 数据库中和内存中的EI。如果是 custom模式，则可能会存在重复记录(因为custom也是从内存中查询)，所以这里需要去重。 如果是 DataBase 模式，则不会有重复的EI.
 
                 List<ExecutionInstance> mergedExecutionInstanceList = new ArrayList<ExecutionInstance>(executionInstanceListFromMemory.size());
 
@@ -204,7 +215,7 @@ public class ParallelGatewayBehavior extends AbstractActivityBehavior<ParallelGa
                     if(null != chosenExecutionInstanceList){
                         for (ExecutionInstance executionInstance : chosenExecutionInstanceList) {
                             MarkDoneUtil.markDoneExecutionInstance(executionInstance,executionInstanceStorage,
-                                processEngineConfiguration);
+                                    processEngineConfiguration);
                         }
                     }
 
@@ -214,11 +225,7 @@ public class ParallelGatewayBehavior extends AbstractActivityBehavior<ParallelGa
                     //未完成的话,流程继续暂停
                     return true;
                 }
-
-//            }finally {
-//
-//                lockStrategy.unLock(processInstanceId,context);
-//            }
+            }
 
         }else{
             throw new EngineException("should not touch here:"+pvmActivity);
@@ -227,7 +234,46 @@ public class ParallelGatewayBehavior extends AbstractActivityBehavior<ParallelGa
         return true;
     }
 
+    private void initTaskList(ExecutionContext context, ContextFactory contextFactory, Set<Entry<String, PvmTransition>> entries, List<PvmActivityTask> taskList) {
+        for (Entry<String, PvmTransition> pvmTransitionEntry : entries) {
 
+            //target 为fork 节点的后继节点，比如service1，service3
+            PvmActivity target = pvmTransitionEntry.getValue().getTarget();
+
+            //将ParentContext 复制到 子线程内
+            ExecutionContext subThreadContext = contextFactory.createChildThreadContext(context);
+
+            PvmActivityTask pvmActivityTask = context.getProcessEngineConfiguration().getPvmActivityTaskFactory().create(target,subThreadContext);
+
+            taskList.add(pvmActivityTask);
+        }
+    }
+
+    private List<ExecutionContext> acquireResults(ExecutionContext context, ProcessEngineConfiguration processEngineConfiguration, Long latchWaitTime, List<Future<ExecutionContext>> futureExecutionResultList) throws TimeoutException {
+        ExceptionProcessor exceptionProcessor = processEngineConfiguration.getExceptionProcessor();
+        List<ExecutionContext> subThreadExecutionContextList = new ArrayList<>(futureExecutionResultList.size());
+        for (Future<ExecutionContext> future : futureExecutionResultList) {
+            try {
+
+                if (hasValidLatchWaitTime(latchWaitTime)) {
+                    ExecutionContext subThreadExecutionContext = future.get(latchWaitTime, TimeUnit.MILLISECONDS);
+                    subThreadExecutionContextList.add(subThreadExecutionContext);
+                } else {
+                    ExecutionContext subThreadExecutionContext = future.get();
+                    subThreadExecutionContextList.add(subThreadExecutionContext);
+
+                }
+            } catch (InterruptedException e) {
+                exceptionProcessor.process(e, context);
+            } catch (ExecutionException e) {
+                exceptionProcessor.process(e, context);
+            } catch (CancellationException e) {
+                    throw e;
+            }
+        }
+
+        return  subThreadExecutionContextList;
+    }
 
 
 }
